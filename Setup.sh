@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pip install flask
+
 #configure .netrc
 #start with \n and create .netrc if it doesn't exist
 #add '~' to .netrc for final version
