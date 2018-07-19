@@ -10,6 +10,7 @@ username,account,password = secrets.authenticators('Jira-Credentials')
 #Create a JIRA object using netrc credentials
 jira = JIRA(basic_auth=(username,password), options={'server': account})
 
+print('project=Wherewolf\ Support AND status=Waiting\ For\ Support')
 print("Tickets overdue") 
 delayLimit = 86400 #(seconds) search tickets which are older than a day
 for issue in jira.search_issues('project=Wherewolf\ Support AND status=Waiting\ For\ Support', maxResults=10):
@@ -18,3 +19,5 @@ for issue in jira.search_issues('project=Wherewolf\ Support AND status=Waiting\ 
     diff = (date - ticket_date).total_seconds()
     if diff > delayLimit:
         print('Ticket Number:{}, Summary:{}, Assignee:{}, Updated:{}'.format(issue.key, issue.fields.summary, issue.fields.assignee, issue.fields.updated))
+
+
