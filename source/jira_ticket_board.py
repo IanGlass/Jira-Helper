@@ -1,7 +1,7 @@
 PROJECT_NAME = "wherewolf support"
 BOARD_TICKET_STATUS = "waiting for support"
 QUEUE_TICKET_STATUS = "waiting for customer"
-SAMPLE_TICKET = "WS-886"
+SAMPLE_TICKET = "WS-866"
 
 
 
@@ -44,9 +44,6 @@ BOARD_SIZE = 25
 #grab credentials from ~/.netrc file
 secrets = netrc.netrc()
 username,account,password = secrets.authenticators('Jira-Credentials')  
-
-#Create a JIRA object using netrc credentials
-jira = JIRA(basic_auth=(username,password), options={'server': account})
 
 class MyMainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -106,20 +103,23 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
     def check_queue(self):
         #Get the transition id needed to move the ticket to the waiting on support queue
-        transitions = jira.transitions(SAMPLE_TICKET)
-        for key in transitions:
-            if (key.get('name') == 'Respond to support'):
-                transition_key = key.get('id')
-        
-        self.queue_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + QUEUE_TICKET_STATUS, maxResults=10)
-        for ticket in self.queue_tickets:
-            date = datetime.now() #get current date
-            ticket_date = parser.parse(ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
-            last_updated = (date - ticket_date).total_seconds()
-            if (ticket.key == 'WS-886'):
-                jira.transition_issue(ticket, transition_key)
-                if (ticket.fields.summary[0:23] != '(follow up with client)'): #prevent tacking more than one on to summary
-                    ticket.update(summary='(follow up with client) ' + ticket.fields.summary)
+        try:
+            transitions = jira.transitions(SAMPLE_TICKET)
+            for key in transitions:
+                if (key.get('name') == 'Respond to support'):
+                    transition_key = key.get('id')
+            
+            self.queue_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + QUEUE_TICKET_STATUS, maxResults=10)
+            for ticket in self.queue_tickets:
+                date = datetime.now() #get current date
+                ticket_date = parser.parse(ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
+                last_updated = (date - ticket_date).total_seconds()
+                if (ticket.key == 'WS-886'):
+                    jira.transition_issue(ticket, transition_key)
+                    if (ticket.fields.summary[0:23] != '(follow up with client)'): #prevent tacking more than one on to summary
+                        ticket.update(summary='(follow up with client) ' + ticket.fields.summary)
+        except: #Wildcard exception, likely cause at this point is invalid sample ticket number
+            print("Invalid ticket number provided")
 
     def start_timers(self):
 
@@ -205,8 +205,12 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 
 
 if __name__ == '__main__':
-    
-    app = QtWidgets.QApplication(sys.argv)
-    main_window = MyMainWindow()
-    main_window.show()
-    sys.exit(app.exec_())
+    #Create a JIRA object using netrc credentials
+    try:
+        jira = JIRA(basic_auth=(username,password), options={'server': account})
+        app = QtWidgets.QApplication(sys.argv)
+        main_window = MyMainWindow()
+        main_window.show()
+        sys.exit(app.exec_())
+    except: #Likely issue is invalid credentials
+        print("Invalid credentials")
