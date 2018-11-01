@@ -13,32 +13,31 @@ pip install jira
 
 #configure .netrc
 #start with \n and create .netrc if it doesn't exist
-#add '~' to .netrc for final version
-echo >> .netrc
+#echo >> .netrc
 
 #Check for "machine value" before prompting for credentials
-if grep -Fxq "machine Jira-Credentials" .netrc
+if grep -Fxq "machine Jira-Credentials" ~/.netrc
 then
 echo Credentials found
 else
 #write machine value configured in python script
 #links which credentials to grab
-echo "machine Jira-Credentials" >> .netrc
+echo "machine Jira-Credentials" >> ~/.netrc
 
 #grab and write account value
 echo please enter your Jira URL
 read urlVar 
-echo account $urlVar >> .netrc
+echo account $urlVar >> ~/.netrc
 
 #grab and write login
 echo please enter you Jira username/email address
 read userName
-echo login $userName >> .netrc
+echo login $userName >> ~/.netrc
 
 #grab and write API key
 echo please enter your Atlassian API key
 read apiKey
-echo password $apiKey >> .netrc
+echo password $apiKey >> ~/.netrc
 
 fi
 
