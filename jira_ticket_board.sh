@@ -73,7 +73,7 @@ echo Would you like to run a cleanup of the \'waiting on customer queue\'?
 read reply
 if [[ $reply == y ]]
 then 
-echo please enter the ticket number of an sample ticket in the project
+echo please enter the ticket number of a sample ticket in the project
 read sampleTicket
 #write the sample ticket name to the fourth line
 sed -i '4d' source/jira_ticket_board.py

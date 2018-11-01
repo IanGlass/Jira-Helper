@@ -1,7 +1,7 @@
 PROJECT_NAME = "wherewolf support"
 BOARD_TICKET_STATUS = "waiting for support"
 QUEUE_TICKET_STATUS = "waiting for customer"
-SAMPLE_TICKET = "WS-866"
+SAMPLE_TICKET = "WS-217"
 
 
 
@@ -37,8 +37,8 @@ fontFile = "arial.ttf" #font used to display text
 FONT_SIZE = 12
 
 BLACK_ALERT_DELAY = 60*60*24*2 #(seconds) displays ticket with 'Last Updated' older than this in black
-RED_ALERT_DELAY = 60*60*24*5 #(seconds) tickets with 'Last Updated' older than this are flashed red
-MELT_DOWN_DELAY = 60*60*24*10 #(seconds) tickets with 'Last Updated' older than this are solid red
+RED_ALERT_DELAY = 60*60*24*7 #(seconds) tickets with 'Last Updated' older than this are flashed red
+MELT_DOWN_DELAY = 60*60*24*14 #(seconds) tickets with 'Last Updated' older than this are solid red
 BOARD_SIZE = 25
 
 #grab credentials from ~/.netrc file
@@ -94,7 +94,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.col_assigned[0].setStyleSheet('font-size: 40px')
         self.col_last_updated[0].setStyleSheet('font-size: 40px')
 
-        self.redPhase = False #used to flash rows if red alert
+        self.red_phase = False #used to flash rows if red alert
 
         self.start_timers()
 
@@ -170,7 +170,10 @@ class MyMainWindow(QtWidgets.QMainWindow):
         time = QTime.currentTime()
         self.col_assigned[0].setText(date.toString(Qt.DefaultLocaleLongDate))
         self.col_last_updated[0].setText(time.toString(Qt.DefaultLocaleLongDate))
-        self.redPhase != self.redPhase #pulse redPhase for flashing redlert tickets
+        if (self.red_phase): #pulse red_phase for flashing redlert tickets
+            self.red_phase = False
+        else:
+            self.red_phase = True
         for ticket in self.board_tickets:
             date = datetime.now() #get current date
             ticket_date = parser.parse(ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
@@ -182,7 +185,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
                     self.col_assigned[count].setStyleSheet('color: red')
                     self.col_last_updated[count].setStyleSheet('color: red')
                 elif (last_updated > RED_ALERT_DELAY): #Things are not so Ok
-                    if (self.redPhase):
+                    if (self.red_phase):
                         self.col_key[count].setStyleSheet('color: red') 
                         self.col_summary[count].setStyleSheet('color: red') 
                         self.col_assigned[count].setStyleSheet('color: red') 
