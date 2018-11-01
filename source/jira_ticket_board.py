@@ -33,12 +33,14 @@ from PyQt5 import QtGui
 
 from PyQt5.QtCore import QDate, QTime, Qt #Used to covert and import datetime
 
-fontFile = "arial.ttf" #font used to display text
+FONT = "Times" #font used to display text
 FONT_SIZE = 12
 
 BLACK_ALERT_DELAY = 60*60*24*2 #(seconds) displays ticket with 'Last Updated' older than this in black
 RED_ALERT_DELAY = 60*60*24*7 #(seconds) tickets with 'Last Updated' older than this are flashed red
 MELT_DOWN_DELAY = 60*60*24*14 #(seconds) tickets with 'Last Updated' older than this are solid red
+QUEUE_OVERDUE = 60*60*24*14 #(seconds) queue tickets older than this are thrown back into waiting on support with
+#(follow up with client) text added to summary
 BOARD_SIZE = 25
 
 #grab credentials from ~/.netrc file
@@ -48,8 +50,6 @@ username,account,password = secrets.authenticators('Jira-Credentials')
 class MyMainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-
-        self.setGeometry(300, 300, 1000, 1000)
 
         win = QtWidgets.QWidget()
         self.setCentralWidget(win)
@@ -61,7 +61,7 @@ class MyMainWindow(QtWidgets.QMainWindow):
         self.col_summary = list()
         self.col_last_updated = list()
 
-        self.fnt = QtGui.QFont("Times", FONT_SIZE)
+        self.fnt = QtGui.QFont(FONT, FONT_SIZE)
         for i in range(0,BOARD_SIZE+2):
             self.col_key.append(QtWidgets.QLabel())
             self.col_key[i].setFont(self.fnt)
@@ -114,10 +114,10 @@ class MyMainWindow(QtWidgets.QMainWindow):
                 date = datetime.now() #get current date
                 ticket_date = parser.parse(ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
                 last_updated = (date - ticket_date).total_seconds()
-                if (ticket.key == 'WS-886'):
+                '''if (last_updated < QUEUE_OVERDUE):
                     jira.transition_issue(ticket, transition_key)
                     if (ticket.fields.summary[0:23] != '(follow up with client)'): #prevent tacking more than one on to summary
-                        ticket.update(summary='(follow up with client) ' + ticket.fields.summary)
+                        ticket.update(summary='(follow up with client) ' + ticket.fields.summary)'''
         except: #Wildcard exception, likely cause at this point is invalid sample ticket number
             print("Invalid ticket number provided")
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
         jira = JIRA(basic_auth=(username,password), options={'server': account})
         app = QtWidgets.QApplication(sys.argv)
         main_window = MyMainWindow()
-        main_window.show()
+        main_window.showMaximized()
         sys.exit(app.exec_())
     except: #Likely issue is invalid credentials
         print("Invalid credentials")
