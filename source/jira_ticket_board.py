@@ -40,6 +40,9 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 from PyQt5.QtCore import QDate, QTime, Qt #Used to covert and import datetime
 
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
 FONT = "Times" #font used to display text
 FONT_SIZE = 12
 
@@ -77,6 +80,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
         self.fetch_tickets_timer.start(5000) #transition every 10 seconds
 
+        #Timer used to transition the page
+        self.save_to_db_timer = QtCore.QTimer(self)
+        self.save_to_db_timer.timeout.connect(self.save_to_db_timeout)
+        self.save_to_db_timer.start(60*60*1000) #save every hour
+
         #Pre-populate support ticket list so board does not stay empty until fetch ticket timeout
         self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
 
@@ -96,6 +104,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def fetch_tickets_timeout(self): 
         self.fetch_tickets_thread = threading.Thread(target=self.fetch_tickets) #Load thread into obj
         self.fetch_tickets_thread.start() #Start thread
+
+    def save_to_db_timeout(self):
+        self.save_to_db_thread = threading.Thread(target=self.save_to_db) #Load thread into obj
+        self.save_to_db_thread.start() #Start thread        
 
     def check_customer_tickets(self):
         #Get the transition id needed to move the ticket to the waiting on support queue
@@ -123,6 +135,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS, maxResults=200)
         self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
         self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+
+    def save_to_db(self):
+
+        self.date = datetime.now() #get current date
+
+        cur.execute('insert into ticket_stats (date,waiting_on_support,waiting_on_customer,in_progress,dev,design,test) values (%s,%s,%s,%s,%s,%s,%s)', (self.date,len(self.support_tickets),len(self.customer_tickets),len(self.in_progress_tickets),len(self.dev_tickets),len(self.design_tickets),len(self.test_tickets)))
 
 class TicketBoard(QtWidgets.QMainWindow):
     
@@ -309,6 +327,15 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.col_test[1].setText(str(len(MainWindow.test_tickets)))
 
 if __name__ == '__main__':
+    con = psycopg2.connect(dbname='jiradb',
+    user='postgres', host='',
+    password='') #Connect to the db
+
+    con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+    cur = con.cursor()
+
+
     #Create a JIRA object using netrc credentials
     jira = JIRA(basic_auth=(username,password), options={'server': account})
     app = QtWidgets.QApplication(sys.argv)
