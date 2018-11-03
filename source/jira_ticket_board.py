@@ -1,7 +1,11 @@
 PROJECT_NAME = "wherewolf support"
-BOARD_TICKET_STATUS = "waiting for support"
-QUEUE_TICKET_STATUS = "waiting for customer"
-SAMPLE_TICKET = "WS-217"
+SUPPORT_TICKET_STATUS = "waiting for support"
+CUSTOMER_TICKET_STATUS = "waiting for customer"
+IN_PROGRESS_TICKET_STATUS = "in progress"
+DEV_TICKET_STATUS = "dev"
+DESIGN_TICKET_STATUS = "design"
+TEST_TICKET_STATUS = "test"
+SAMPLE_TICKET = "WS-462"
 
 
 
@@ -14,8 +18,13 @@ SAMPLE_TICKET = "WS-217"
 #This project follows the PEP-8 style guides
 
 PROJECT_NAME = PROJECT_NAME.replace(" ", "\ ") #Format project name to UNIX compatible directory path used by JIRA API
-BOARD_TICKET_STATUS = BOARD_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
-QUEUE_TICKET_STATUS = QUEUE_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+SUPPORT_TICKET_STATUS = SUPPORT_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+CUSTOMER_TICKET_STATUS = CUSTOMER_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+IN_PROGRESS_TICKET_STATUS = IN_PROGRESS_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+DEV_TICKET_STATUS = DEV_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+DESIGN_TICKET_STATUS = DESIGN_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+TEST_TICKET_STATUS = TEST_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
+
 
 from jira import JIRA
 from datetime import datetime
@@ -27,9 +36,7 @@ import threading
 
 #GUI
 import sys
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 from PyQt5.QtCore import QDate, QTime, Qt #Used to covert and import datetime
 
@@ -39,22 +46,92 @@ FONT_SIZE = 12
 BLACK_ALERT_DELAY = 60*60*24*2 #(seconds) displays ticket with 'Last Updated' older than this in black
 RED_ALERT_DELAY = 60*60*24*7 #(seconds) tickets with 'Last Updated' older than this are flashed red
 MELT_DOWN_DELAY = 60*60*24*14 #(seconds) tickets with 'Last Updated' older than this are solid red
-QUEUE_OVERDUE = 60*60*24*14 #(seconds) queue tickets older than this are thrown back into waiting on support with
+QUEUE_OVERDUE = 60*60*24*7 #(seconds) queue tickets older than this are thrown back into waiting on support with
 #(follow up with client) text added to summary
 BOARD_SIZE = 25
+TRANSITION_PERIOD = 5000 #(miliseconds) time between page swap
 
 #grab credentials from ~/.netrc file
 secrets = netrc.netrc()
 username,account,password = secrets.authenticators('Jira-Credentials')  
 
-class MyMainWindow(QtWidgets.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        win = QtWidgets.QWidget()
-        self.setCentralWidget(win)
-        grid = QtWidgets.QGridLayout()
-        win.setLayout(grid)
+        self.window = QtWidgets.QStackedWidget() #create the main widget for the page
+        self.setCentralWidget(self.window)
+
+        #Timer used to fetch the waiting on customer queue and throw back into
+        self.check_customer_tickets_timer = QtCore.QTimer(self)
+        self.check_customer_tickets_timer.timeout.connect(self.check_customer_tickets_timeout)
+        self.check_customer_tickets_timer.start(1000) #check every 10 seconds
+
+        #Timer used to transition the page
+        self.transition_page_timer = QtCore.QTimer(self)
+        self.transition_page_timer.timeout.connect(self.transition_page_timeout)
+        self.transition_page_timer.start(TRANSITION_PERIOD) #transition every 10 seconds
+
+        #Timer used to transition the page
+        self.fetch_tickets_timer = QtCore.QTimer(self)
+        self.fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
+        self.fetch_tickets_timer.start(5000) #transition every 10 seconds
+
+        #Pre-populate support ticket list so board does not stay empty until fetch ticket timeout
+        self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+
+
+    def transition_page_timeout(self):
+        index_Id = self.window.currentIndex()
+        if index_Id < self.window.count() - 1:
+            self.window.setCurrentIndex(index_Id + 1)
+        else:
+            self.window.setCurrentIndex(0)
+
+    def check_customer_tickets_timeout(self): 
+        if (SAMPLE_TICKET): #if sample ticket is supplie then we can proceed
+            self.check_customer_tickets_thread = threading.Thread(target=self.check_customer_tickets) #Load thread into obj
+            self.check_customer_tickets_thread.start() #Start thread
+
+    def fetch_tickets_timeout(self): 
+        self.fetch_tickets_thread = threading.Thread(target=self.fetch_tickets) #Load thread into obj
+        self.fetch_tickets_thread.start() #Start thread
+
+    def check_customer_tickets(self):
+        #Get the transition id needed to move the ticket to the waiting on support queue
+        transition_key = '781'
+        #transitions = jira.transitions(SAMPLE_TICKET)
+        #for key in transitions:
+            #if (key.get('name') == 'Respond to support'):
+                #print(key.get('id'))
+                #transition_key = key.get('id')
+        
+        queue_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+        for queue_ticket in queue_tickets:
+            date = datetime.now() #get current date
+            queue_ticket_date = parser.parse(queue_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
+            last_updated = (date - queue_ticket_date).total_seconds()
+            if (last_updated > QUEUE_OVERDUE): #If tickets are overdue
+                jira.transition_issue(queue_ticket, transition_key) #Change ticket status
+                if (queue_ticket.fields.summary[0:30] != '(please follow up with client)'): #prevent tacking more than one on to summary
+                    queue_ticket.update(summary='(please follow up with client) ' + queue_ticket.fields.summary)
+
+    def fetch_tickets(self): #Thread for grabbing all tickets used by program
+        self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+        self.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+        self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
+        self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS, maxResults=200)
+        self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
+        self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+
+class TicketBoard(QtWidgets.QMainWindow):
+    
+    def __init__(self):
+        super().__init__()
+        ticket_board_widget = QtWidgets.QWidget() #create the widget to contain the ticket board layout
+        ticket_board_layout = QtWidgets.QGridLayout() #layout for ticket board
+        ticket_board_widget.setLayout(ticket_board_layout)
+        main_window.window.addWidget(ticket_board_widget) #add the ticket board widget/layout to the main window widget
 
         self.col_key = list()
         self.col_assigned = list()
@@ -65,19 +142,21 @@ class MyMainWindow(QtWidgets.QMainWindow):
         for i in range(0,BOARD_SIZE+2):
             self.col_key.append(QtWidgets.QLabel())
             self.col_key[i].setFont(self.fnt)
-            grid.addWidget(self.col_key[i], i, 0)
+            ticket_board_layout.addWidget(self.col_key[i], i, 0)
 
             self.col_summary.append(QtWidgets.QLabel())
             self.col_summary[i].setFont(self.fnt)
-            grid.addWidget(self.col_summary[i], i, 1)
+            ticket_board_layout.addWidget(self.col_summary[i], i, 1)
 
             self.col_assigned.append(QtWidgets.QLabel())
             self.col_assigned[i].setFont(self.fnt)
-            grid.addWidget(self.col_assigned[i], i, 2)
+            ticket_board_layout.addWidget(self.col_assigned[i], i, 2)
 
             self.col_last_updated.append(QtWidgets.QLabel())
             self.col_last_updated[i].setFont(self.fnt)
-            grid.addWidget(self.col_last_updated[i], i, 3)
+            ticket_board_layout.addWidget(self.col_last_updated[i], i, 3)
+        
+        self.col_key[0].setStyleSheet('background-image: url(Wherewolf.png); background-repeat: no-repeat ')
 
         #Fill column titles
         self.fnt.setBold(True)
@@ -96,63 +175,12 @@ class MyMainWindow(QtWidgets.QMainWindow):
 
         self.red_phase = False #used to flash rows if red alert
 
-        self.start_timers()
-
-    def fetch_board_tickets(self): #Thread method to fetch a list of tickets from jira
-        self.board_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + BOARD_TICKET_STATUS, maxResults=200)
-
-    def check_queue(self):
-        #Get the transition id needed to move the ticket to the waiting on support queue
-        try:
-            transitions = jira.transitions(SAMPLE_TICKET)
-            for key in transitions:
-                if (key.get('name') == 'Respond to support'):
-                    transition_key = key.get('id')
-            
-            self.queue_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + QUEUE_TICKET_STATUS, maxResults=10)
-            for ticket in self.queue_tickets:
-                date = datetime.now() #get current date
-                ticket_date = parser.parse(ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
-                last_updated = (date - ticket_date).total_seconds()
-                '''if (last_updated < QUEUE_OVERDUE):
-                    jira.transition_issue(ticket, transition_key)
-                    if (ticket.fields.summary[0:23] != '(follow up with client)'): #prevent tacking more than one on to summary
-                        ticket.update(summary='(follow up with client) ' + ticket.fields.summary)'''
-        except: #Wildcard exception, likely cause at this point is invalid sample ticket number
-            print("Invalid ticket number provided")
-
-    def start_timers(self):
-
-        #Timer used to fecth issues from jira
-        self.fetch_ticket_timer = QtCore.QTimer(self)
-        self.fetch_ticket_timer.timeout.connect(self.fetch_tickets_timeout)
-        self.fetch_ticket_timer.start(2000)
-
-        #Pre-populate ticket list so board does not stay empty until fetch_ticket_timer timeout period
-        self.board_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + BOARD_TICKET_STATUS, maxResults=200)
-
         #Timer used to update board
         self.update_board_timer = QtCore.QTimer(self)
         self.update_board_timer.timeout.connect(self.update_board_timeout)
         self.update_board_timer.start(1000)
 
-        #Timer used to fetch the waiting on customer queue and throw back into
-        self.check_queue_timer = QtCore.QTimer(self)
-        self.check_queue_timer.timeout.connect(self.check_queue_timeout)
-        self.check_queue_timer.start(10000) #check every 10 seconds
-
-    def fetch_tickets_timeout(self): #Thread is re-created every call to this function
-
-        self.fetch_tickets_thread = threading.Thread(target=self.fetch_board_tickets) #Load thread into obj
-        self.fetch_tickets_thread.start() #Start thread
-
-    def check_queue_timeout(self): 
-        if (SAMPLE_TICKET): #if sample ticket is supplie then we can proceed
-            self.check_queue_thread = threading.Thread(target=self.check_queue) #Load thread into obj
-            self.check_queue_thread.start() #Start thread
-
     def update_board_timeout(self):
-
         self.clear_widgets()
         self.update_board()
 
@@ -174,9 +202,9 @@ class MyMainWindow(QtWidgets.QMainWindow):
             self.red_phase = False
         else:
             self.red_phase = True
-        for ticket in self.board_tickets:
+        for support_ticket in MainWindow.support_tickets:
             date = datetime.now() #get current date
-            ticket_date = parser.parse(ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
+            ticket_date = parser.parse(support_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
             last_updated = (date - ticket_date).total_seconds()
             if (last_updated > BLACK_ALERT_DELAY and count <= BOARD_SIZE+1): #Only display if board is not full
                 if (last_updated > MELT_DOWN_DELAY): #Things are serious!
@@ -200,20 +228,92 @@ class MyMainWindow(QtWidgets.QMainWindow):
                     self.col_summary[count].setStyleSheet('color: black') 
                     self.col_assigned[count].setStyleSheet('color: black') 
                     self.col_last_updated[count].setStyleSheet('color: black') 
-                self.col_key[count].setText(str(ticket.key))
-                self.col_summary[count].setText(str(ticket.fields.summary))
-                self.col_assigned[count].setText(str(ticket.fields.assignee))
-                self.col_last_updated[count].setText(str(ticket.fields.updated))
+                self.col_key[count].setText(str(support_ticket.key))
+                self.col_summary[count].setText(str(support_ticket.fields.summary))
+                self.col_assigned[count].setText(str(support_ticket.fields.assignee))
+                self.col_last_updated[count].setText(str(support_ticket.fields.updated))
                 count = count + 1
-                
+
+class AnalyticsBoard(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        analytics_board_widget = QtWidgets.QWidget() #create the widget to contain the analytics board layout
+        analytics_board_layout = QtWidgets.QGridLayout() #layout for analytics board
+        analytics_board_widget.setLayout(analytics_board_layout)
+        main_window.window.addWidget(analytics_board_widget) #add the analytics board widget/layout to the main window widget
+
+        self.col_support = list()
+        self.col_customer = list()
+        self.col_in_progress = list()
+        self.col_dev = list()
+        self.col_design = list()
+        self.col_test = list()
+
+        self.fnt = QtGui.QFont(FONT, FONT_SIZE)
+        for i in range(0,10):
+            self.col_support.append(QtWidgets.QLabel())
+            self.col_support[i].setFont(self.fnt)
+            analytics_board_layout.addWidget(self.col_support[i], i, 0)
+
+            self.col_customer.append(QtWidgets.QLabel())
+            self.col_customer[i].setFont(self.fnt)
+            analytics_board_layout.addWidget(self.col_customer[i], i, 1)
+
+            self.col_in_progress.append(QtWidgets.QLabel())
+            self.col_in_progress[i].setFont(self.fnt)
+            analytics_board_layout.addWidget(self.col_in_progress[i], i, 2)
+
+            self.col_dev.append(QtWidgets.QLabel())
+            self.col_dev[i].setFont(self.fnt)
+            analytics_board_layout.addWidget(self.col_dev[i], i, 3)
+
+            self.col_design.append(QtWidgets.QLabel())
+            self.col_design[i].setFont(self.fnt)
+            analytics_board_layout.addWidget(self.col_design[i], i, 4)
+
+            self.col_test.append(QtWidgets.QLabel())
+            self.col_test[i].setFont(self.fnt)
+            analytics_board_layout.addWidget(self.col_test[i], i, 5)
+
+        #Fill column titles
+        self.fnt.setBold(True)
+        self.col_support[0].setFont(self.fnt)
+        self.col_support[0].setText("# of support tickets")
+        self.col_customer[0].setFont(self.fnt)
+        self.col_customer[0].setText("# of customer tickets")
+        self.col_in_progress[0].setFont(self.fnt)
+        self.col_in_progress[0].setText("# of tickets in Progress")
+        self.col_dev[0].setFont(self.fnt)
+        self.col_dev[0].setText("# of tickest in dev")
+        self.col_design[0].setFont(self.fnt)
+        self.col_design[0].setText("# of tickest in design")
+        self.col_test[0].setFont(self.fnt)
+        self.col_test[0].setText("# of tickest in test")
+        self.fnt.setBold(False) #Reset font
+
+        self.update_analytics()
+
+    def update_analytics(self):
+        MainWindow.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + 'waiting\ for\ support', maxResults=200)
+        MainWindow.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + 'waiting\ for\ customer', maxResults=200)
+        MainWindow.in_progress_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + 'in\ progress', maxResults=200)
+        MainWindow.dev_tickets = jira.search_issues('status=' + 'Dev', maxResults=200)
+        MainWindow.design_tickets = jira.search_issues('status=' + 'design', maxResults=200)
+        MainWindow.test_tickets = jira.search_issues('status=' + 'test', maxResults=200)
+
+        self.col_support[1].setText(str(len(MainWindow.support_tickets)))
+        self.col_customer[1].setText(str(len(MainWindow.customer_tickets)))
+        self.col_in_progress[1].setText(str(len(MainWindow.in_progress_tickets)))
+        self.col_dev[1].setText(str(len(MainWindow.dev_tickets)))
+        self.col_design[1].setText(str(len(MainWindow.design_tickets)))
+        self.col_test[1].setText(str(len(MainWindow.test_tickets)))
 
 if __name__ == '__main__':
     #Create a JIRA object using netrc credentials
-    try:
-        jira = JIRA(basic_auth=(username,password), options={'server': account})
-        app = QtWidgets.QApplication(sys.argv)
-        main_window = MyMainWindow()
-        main_window.showMaximized()
-        sys.exit(app.exec_())
-    except: #Likely issue is invalid credentials
-        print("Invalid credentials")
+    jira = JIRA(basic_auth=(username,password), options={'server': account})
+    app = QtWidgets.QApplication(sys.argv)
+    main_window = MainWindow()
+    ticket_board = TicketBoard()
+    analytics_board = AnalyticsBoard()
+    main_window.showMaximized()
+    sys.exit(app.exec_())
