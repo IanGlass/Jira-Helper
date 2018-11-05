@@ -29,6 +29,7 @@ TEST_TICKET_STATUS = TEST_TICKET_STATUS.replace(" ", "\ ") #Format ticket status
 from jira import JIRA
 from datetime import datetime
 from dateutil import parser #Used to truncate and convert string to datetime Obj
+from dateutil import tz #used to convert local-UTC
 import netrc
 from time import sleep
 
@@ -43,20 +44,35 @@ from PyQt5.QtCore import QDate, QTime, Qt #Used to covert and import datetime
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+
 FONT = "Times" #font used to display text
 FONT_SIZE = 12
 
+#TODO make these variables defined from bash
 BLACK_ALERT_DELAY = 60*60*24*2 #(seconds) displays ticket with 'Last Updated' older than this in black
 RED_ALERT_DELAY = 60*60*24*7 #(seconds) tickets with 'Last Updated' older than this are flashed red
 MELT_DOWN_DELAY = 60*60*24*14 #(seconds) tickets with 'Last Updated' older than this are solid red
-QUEUE_OVERDUE = 60*60*24*7 #(seconds) queue tickets older than this are thrown back into waiting on support with
+QUEUE_OVERDUE = 60*60*24*7 #(seconds) waiting on customer tickets older than this are thrown back into waiting on support with
 #(follow up with client) text added to summary
-BOARD_SIZE = 25
 TRANSITION_PERIOD = 5000 #(miliseconds) time between page swap
+
+BOARD_SIZE = 25
 
 #grab credentials from ~/.netrc file
 secrets = netrc.netrc()
-username,account,password = secrets.authenticators('Jira-Credentials')  
+username,account,password = secrets.authenticators('Jira-Credentials')
+
+FROM_ZONE = tz.tzutc()
+TO_ZONE = tz.tzlocal()
+
+
+#TODO
+#Place each class in own module
+#Save in local db
+#use flags to check if waiting on customer support cleanout is required, place cleanup in own class and only execute if flag is set in bash
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -64,6 +80,38 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.window = QtWidgets.QStackedWidget() #create the main widget for the page
         self.setCentralWidget(self.window)
+
+        try: #Try to connect to existing db for ticket analytics
+            self.con = psycopg2.connect(dbname='ticketdb',
+            user='postgres', host='',
+            password='') #Connect to the db
+            self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.cur = self.con.cursor()
+
+        except: #If this reached then db does not exist, need to create it
+            self.con = psycopg2.connect(dbname='postgres',
+            user='postgres', host='',
+            password='') #Connect to default postgres db first
+            self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+            self.cur = self.con.cursor()
+            self.cur.execute('CREATE DATABASE ticketdb')
+
+            #Connect to new db
+            self.con = psycopg2.connect(dbname='ticketdb',
+            user='postgres', host='',
+            password='')
+            self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.cur = self.con.cursor()
+            #Populate db with a table and cols
+            self.cur.execute('''CREATE TABLE IF NOT EXISTS ticket_stats(
+            stamp timestamptz PRIMARY KEY, 
+            support int NOT NULL, 
+            in_progress int NOT NULL, 
+            customer int NOT NULL, 
+            dev int NOT NULL, 
+            design int NOT NULL, 
+            test int NOT NULL)''')
 
         #Timer used to fetch the waiting on customer queue and throw back into
         self.check_customer_tickets_timer = QtCore.QTimer(self)
@@ -78,16 +126,34 @@ class MainWindow(QtWidgets.QMainWindow):
         #Timer used to transition the page
         self.fetch_tickets_timer = QtCore.QTimer(self)
         self.fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
-        self.fetch_tickets_timer.start(5000) #transition every 10 seconds
+        self.fetch_tickets_timer.start(2000) #fetch tickets every 2 seconds
 
         #Timer used to transition the page
         self.save_to_db_timer = QtCore.QTimer(self)
         self.save_to_db_timer.timeout.connect(self.save_to_db_timeout)
-        self.save_to_db_timer.start(60*60*1000) #save every hour
+        self.save_to_db_timer.start(1000) #save every half-hour
 
-        #Pre-populate support ticket list so board does not stay empty until fetch ticket timeout
+        #Pre-populate ticket list so boards do not stay empty until fetch ticket timeout
         self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+        self.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+        self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
+        self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
+        self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
+        self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
 
+        #Fetch ticket history from db, so analytics doesn't have to wait for call to db
+        self.cur.execute('select stamp, support, customer from ticket_stats')
+        self.ticket_history = self.cur.fetchall()
+
+        self.date_history = list()
+        self.support_history = list()
+        self.customer_history = list()
+
+        #TODO this is horrible
+        for i in range(0,len(self.ticket_history)):
+            self.date_history.append(self.ticket_history[i][0])
+            self.support_history.append(self.ticket_history[i][1])
+            self.customer_history.append(self.ticket_history[i][2])
 
     def transition_page_timeout(self):
         index_Id = self.window.currentIndex()
@@ -97,7 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.window.setCurrentIndex(0)
 
     def check_customer_tickets_timeout(self): 
-        if (SAMPLE_TICKET): #if sample ticket is supplie then we can proceed
+        if (SAMPLE_TICKET): #if sample ticket is supplied then we can proceed
             self.check_customer_tickets_thread = threading.Thread(target=self.check_customer_tickets) #Load thread into obj
             self.check_customer_tickets_thread.start() #Start thread
 
@@ -110,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_to_db_thread.start() #Start thread        
 
     def check_customer_tickets(self):
+        #TODO can just grab a ticket from the waiting on customer pile in try block, if nothing returned 'transitions' will fail but then nothing to check anyway
         #Get the transition id needed to move the ticket to the waiting on support queue
         transition_key = '781'
         #transitions = jira.transitions(SAMPLE_TICKET)
@@ -118,29 +185,44 @@ class MainWindow(QtWidgets.QMainWindow):
                 #print(key.get('id'))
                 #transition_key = key.get('id')
         
-        queue_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
-        for queue_ticket in queue_tickets:
+        for customer_ticket in self.customer_tickets:
             date = datetime.now() #get current date
-            queue_ticket_date = parser.parse(queue_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
-            last_updated = (date - queue_ticket_date).total_seconds()
+            customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
+            last_updated = (date - customer_ticket_date).total_seconds()
             if (last_updated > QUEUE_OVERDUE): #If tickets are overdue
-                jira.transition_issue(queue_ticket, transition_key) #Change ticket status
-                if (queue_ticket.fields.summary[0:30] != '(please follow up with client)'): #prevent tacking more than one on to summary
-                    queue_ticket.update(summary='(please follow up with client) ' + queue_ticket.fields.summary)
+                jira.transition_issue(customer_ticket, transition_key) #Change ticket status
+                if (customer_ticket.fields.summary[0:30] != '(please follow up with client)'): #prevent tacking more than one on to summary
+                    customer_ticket.update(summary='(please follow up with client) ' + customer_ticket.fields.summary)
 
     def fetch_tickets(self): #Thread for grabbing all tickets used by program
         self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
         self.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
         self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
-        self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS, maxResults=200)
+        self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
         self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
         self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
 
     def save_to_db(self):
 
-        self.date = datetime.now() #get current date
+        self.date = datetime.utcnow() #get current date in UTC to save to db
 
-        cur.execute('insert into ticket_stats (date,waiting_on_support,waiting_on_customer,in_progress,dev,design,test) values (%s,%s,%s,%s,%s,%s,%s)', (self.date,len(self.support_tickets),len(self.customer_tickets),len(self.in_progress_tickets),len(self.dev_tickets),len(self.design_tickets),len(self.test_tickets)))
+        self.cur.execute('insert into ticket_stats (stamp,support,customer,in_progress,dev,design,test) values (%s,%s,%s,%s,%s,%s,%s)', (self.date,len(self.support_tickets),len(self.customer_tickets),len(self.in_progress_tickets),len(self.dev_tickets),len(self.design_tickets),len(self.test_tickets)))
+
+        #Fetch ticket history from db
+        self.cur.execute('select stamp, support, customer from ticket_stats')
+        self.ticket_history = self.cur.fetchall()
+
+        #Empty lists so we don't get double ups
+        self.date_history.clear()
+        self.support_history.clear()
+        self.customer_history.clear()
+
+        #TODO this is horrible
+        for i in range(0,len(self.ticket_history)):
+            self.date_history.append(self.ticket_history[i][0].astimezone(TO_ZONE))
+            self.support_history.append(self.ticket_history[i][1])
+            self.customer_history.append(self.ticket_history[i][2])
+        
 
 class TicketBoard(QtWidgets.QMainWindow):
     
@@ -157,7 +239,7 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.col_last_updated = list()
 
         self.fnt = QtGui.QFont(FONT, FONT_SIZE)
-        for i in range(0,BOARD_SIZE+2):
+        for i in range(0,BOARD_SIZE+2): #Build the ticket board
             self.col_key.append(QtWidgets.QLabel())
             self.col_key[i].setFont(self.fnt)
             ticket_board_layout.addWidget(self.col_key[i], i, 0)
@@ -173,8 +255,6 @@ class TicketBoard(QtWidgets.QMainWindow):
             self.col_last_updated.append(QtWidgets.QLabel())
             self.col_last_updated[i].setFont(self.fnt)
             ticket_board_layout.addWidget(self.col_last_updated[i], i, 3)
-        
-        self.col_key[0].setStyleSheet('background-image: url(Wherewolf.png); background-repeat: no-repeat ')
 
         #Fill column titles
         self.fnt.setBold(True)
@@ -220,7 +300,7 @@ class TicketBoard(QtWidgets.QMainWindow):
             self.red_phase = False
         else:
             self.red_phase = True
-        for support_ticket in MainWindow.support_tickets:
+        for support_ticket in main_window.support_tickets:
             date = datetime.now() #get current date
             ticket_date = parser.parse(support_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
             last_updated = (date - ticket_date).total_seconds()
@@ -259,6 +339,14 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         analytics_board_layout = QtWidgets.QGridLayout() #layout for analytics board
         analytics_board_widget.setLayout(analytics_board_layout)
         main_window.window.addWidget(analytics_board_widget) #add the analytics board widget/layout to the main window widget
+
+        self.figure = Figure(figsize=(7, 4), dpi=100)
+        self.canvas = FigureCanvas(self.figure)
+        analytics_board_layout.addWidget(self.canvas,3,1,-1,3)
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_xlabel('date')
+        self.ax.set_ylabel('# of tickets')
+        self.figure.patch.set_facecolor([240/255,240/255,240/255,1])
 
         self.col_support = list()
         self.col_customer = list()
@@ -309,31 +397,31 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.col_test[0].setText("# of tickest in test")
         self.fnt.setBold(False) #Reset font
 
-        self.update_analytics()
+        #Timer used to update the analytics page
+        self.update_analytics_timer = QtCore.QTimer(self)
+        self.update_analytics_timer.timeout.connect(self.update_analytics_timeout)
+        self.update_analytics_timer.start(1000) #update every second
+
+    def update_analytics_timeout(self): 
+        self.update_analytics_thread = threading.Thread(target=self.update_analytics) #Load thread into obj
+        self.update_analytics_thread.start() #Start thread
 
     def update_analytics(self):
-        MainWindow.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + 'waiting\ for\ support', maxResults=200)
-        MainWindow.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + 'waiting\ for\ customer', maxResults=200)
-        MainWindow.in_progress_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + 'in\ progress', maxResults=200)
-        MainWindow.dev_tickets = jira.search_issues('status=' + 'Dev', maxResults=200)
-        MainWindow.design_tickets = jira.search_issues('status=' + 'design', maxResults=200)
-        MainWindow.test_tickets = jira.search_issues('status=' + 'test', maxResults=200)
+        self.col_support[1].setText(str(len(main_window.support_tickets)))
+        self.col_customer[1].setText(str(len(main_window.customer_tickets)))
+        self.col_in_progress[1].setText(str(len(main_window.in_progress_tickets)))
+        self.col_dev[1].setText(str(len(main_window.dev_tickets)))
+        self.col_design[1].setText(str(len(main_window.design_tickets)))
+        self.col_test[1].setText(str(len(main_window.test_tickets)))
 
-        self.col_support[1].setText(str(len(MainWindow.support_tickets)))
-        self.col_customer[1].setText(str(len(MainWindow.customer_tickets)))
-        self.col_in_progress[1].setText(str(len(MainWindow.in_progress_tickets)))
-        self.col_dev[1].setText(str(len(MainWindow.dev_tickets)))
-        self.col_design[1].setText(str(len(MainWindow.design_tickets)))
-        self.col_test[1].setText(str(len(MainWindow.test_tickets)))
+        self.ax.clear()
+        print(main_window.date_history)
+        self.ax.plot(main_window.date_history, main_window.support_history, 'b-*', label = 'waiting on support')
+        self.ax.plot(main_window.date_history, main_window.customer_history, 'r-+', label = 'waiting on customer')
+        self.ax.legend(loc='best')
+        self.canvas.draw()
 
 if __name__ == '__main__':
-    con = psycopg2.connect(dbname='jiradb',
-    user='postgres', host='',
-    password='') #Connect to the db
-
-    con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
-    cur = con.cursor()
 
 
     #Create a JIRA object using netrc credentials
@@ -343,4 +431,5 @@ if __name__ == '__main__':
     ticket_board = TicketBoard()
     analytics_board = AnalyticsBoard()
     main_window.showMaximized()
+    main_window.setWindowTitle('The coolest program in the world')
     sys.exit(app.exec_())

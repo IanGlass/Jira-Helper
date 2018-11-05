@@ -1,6 +1,8 @@
 #!/bin/bash
 
-#Install python?
+#Install psql in linux
+
+#Install python in linux
 
 #Install latest version of pip package manager
 python -m pip install --upgrade pip
@@ -10,6 +12,12 @@ pip install PyQt5
 
 #Install JIRA API for Python
 pip install jira
+
+#Install for postgresql
+pip install psycopg2
+
+#install matplotlib required to plot in analytics board
+python -m pip install -U matplotlib
 
 #configure .netrc
 #start with \n and create .netrc if it doesn't exist
@@ -41,6 +49,9 @@ echo password $apiKey >> ~/.netrc
 
 fi
 
+#check if db exists, if not create one
+
+#Can remove these assuming user has status' outlined in README.md
 #Check for configured project name, if none then prompt and save
 file_content=$(head -c 12 source/jira_ticket_board.py)
 if [[ $file_content = 'PROJECT_NAME' ]]
@@ -57,12 +68,12 @@ echo project name added to module
 echo please enter the status name of tickets waiting on support
 read boardStatus
 #write the board ticket status to the second line 
-sed -i "2 i\BOARD_TICKET_STATUS = \"$boardStatus\"" source/jira_ticket_board.py
+sed -i "2 i\SUPPORT_TICKET_STATUS = \"$boardStatus\"" source/jira_ticket_board.py
 
 echo please enter the status name of tickets waiting on customer
 read queueStatus
 #write the queue ticket status to the third line 
-sed -i "3 i\QUEUE_TICKET_STATUS = \"$queueStatus\"" source/jira_ticket_board.py
+sed -i "3 i\CUSTOMER_TICKET_STATUS = \"$queueStatus\"" source/jira_ticket_board.py
 
 
 fi
