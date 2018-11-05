@@ -123,15 +123,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.transition_page_timer.timeout.connect(self.transition_page_timeout)
         self.transition_page_timer.start(TRANSITION_PERIOD) #transition every 10 seconds
 
-        #Timer used to transition the page
+        #Timer fetch tickets from JIRA server
         self.fetch_tickets_timer = QtCore.QTimer(self)
         self.fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
         self.fetch_tickets_timer.start(2000) #fetch tickets every 2 seconds
 
-        #Timer used to transition the page
+        #Timer to save ticket stats to db
         self.save_to_db_timer = QtCore.QTimer(self)
         self.save_to_db_timer.timeout.connect(self.save_to_db_timeout)
-        self.save_to_db_timer.start(1000) #save every half-hour
+        self.save_to_db_timer.start(30*60*1000) #save every half-hour
 
         #Pre-populate ticket list so boards do not stay empty until fetch ticket timeout
         self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
@@ -176,7 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_to_db_thread.start() #Start thread        
 
     def check_customer_tickets(self):
-        #TODO can just grab a ticket from the waiting on customer pile in try block, if nothing returned 'transitions' will fail but then nothing to check anyway
+        #TODO can just grab any ticket from the waiting on customer pile in try block, if nothing returned 'transitions' will fail but then nothing to check anyway
         #Get the transition id needed to move the ticket to the waiting on support queue
         transition_key = '781'
         #transitions = jira.transitions(SAMPLE_TICKET)
@@ -415,7 +415,6 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.col_test[1].setText(str(len(main_window.test_tickets)))
 
         self.ax.clear()
-        print(main_window.date_history)
         self.ax.plot(main_window.date_history, main_window.support_history, 'b-*', label = 'waiting on support')
         self.ax.plot(main_window.date_history, main_window.customer_history, 'r-+', label = 'waiting on customer')
         self.ax.legend(loc='best')
