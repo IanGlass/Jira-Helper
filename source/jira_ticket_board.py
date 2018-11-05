@@ -4,9 +4,7 @@ IN_PROGRESS_TICKET_STATUS = "in progress"
 DEV_TICKET_STATUS = "dev"
 DESIGN_TICKET_STATUS = "design"
 TEST_TICKET_STATUS = "test"
-SAMPLE_TICKET = "WS-462"
-
-
+SAMPLE_TICKET = ""
 
 
 #This module creates a Qt table to display overdue issues as either older than:
@@ -23,6 +21,7 @@ DEV_TICKET_STATUS = DEV_TICKET_STATUS.replace(" ", "\ ") #Format ticket status t
 DESIGN_TICKET_STATUS = DESIGN_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
 TEST_TICKET_STATUS = TEST_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
 
+print(SUPPORT_TICKET_STATUS)
 
 from jira import JIRA
 from datetime import datetime

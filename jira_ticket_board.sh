@@ -19,10 +19,6 @@ pip install psycopg2
 #install matplotlib required to plot in analytics board
 python -m pip install -U matplotlib
 
-#configure .netrc
-#start with \n and create .netrc if it doesn't exist
-#echo >> .netrc
-
 #Check for "machine value" before prompting for credentials
 if grep -Fxq "machine Jira-Credentials" ~/.netrc
 then
@@ -49,38 +45,48 @@ echo password $apiKey >> ~/.netrc
 
 fi
 
-#check if db exists, if not create one
-
 #Can remove these assuming user has status' outlined in README.md
 #No longer using project name var in module, project assumes that everything works on status
 #Check for configured project name, if none then prompt and save
-file_content=$(head -c 12 source/jira_ticket_board.py)
-if [[ $file_content = 'PROJECT_NAME' ]]
+file_content=$(head -c 21 source/jira_ticket_board.py)
+if [[ $file_content = 'SUPPORT_TICKET_STATUS' ]]
 then
-echo project name and status names found
+echo project status names found
 else
-echo please enter your project name
-read projectName
-#write the projectName to the first line 
-sed -i "1 i\PROJECT_NAME = \"$projectName\"" source/jira_ticket_board.py
-sed -i "1 i\PROJECT_NAME = \"$projectName\"" source/queue_cleanup.py
-echo project name added to module
-
-echo please enter the status name of tickets waiting on support
-read boardStatus
+echo please enter the status name of tickets waiting for support
+read supportStatus
 #write the board ticket status to the second line 
-sed -i "2 i\SUPPORT_TICKET_STATUS = \"$boardStatus\"" source/jira_ticket_board.py
+sed -i "1 i\SUPPORT_TICKET_STATUS = \"$supportStatus\"" source/jira_ticket_board.py
 
-echo please enter the status name of tickets waiting on customer
-read queueStatus
+echo please enter the status name of tickets waiting for customer
+read customerStatus
 #write the queue ticket status to the third line 
-sed -i "3 i\CUSTOMER_TICKET_STATUS = \"$queueStatus\"" source/jira_ticket_board.py
+sed -i "2 i\CUSTOMER_TICKET_STATUS = \"$customerStatus\"" source/jira_ticket_board.py
+
+echo please enter the status name of tickets in progress
+read inProgressStatus
+#write the queue ticket status to the third line 
+sed -i "3 i\IN_PROGRESS_TICKET_STATUS = \"$inProgressStatus\"" source/jira_ticket_board.py
+
+echo please enter the status name of tickets in development
+read devStatus
+#write the queue ticket status to the third line 
+sed -i "4 i\DEV_TICKET_STATUS = \"$devStatus\"" source/jira_ticket_board.py
+
+echo please enter the status name of tickets in design
+read inProgressStatus
+#write the queue ticket status to the third line 
+sed -i "5 i\DESIGN_TICKET_STATUS = \"$inProgressStatus\"" source/jira_ticket_board.py
+
+echo please enter the status name of tickets test
+read testStatus
+#write the queue ticket status to the third line 
+sed -i "6 i\TEST_TICKET_STATUS = \"$testStatus\"" source/jira_ticket_board.py
 
 
 fi
 
-#Check for configured project status
-
+#Change to use python flags
 echo Would you like to run a cleanup of the \'waiting on customer queue\'?
 read reply
 if [[ $reply == y ]]
@@ -88,11 +94,11 @@ then
 echo please enter the ticket number of a sample ticket in the project
 read sampleTicket
 #write the sample ticket name to the fourth line
-sed -i '4d' source/jira_ticket_board.py
-sed -i "4 i\SAMPLE_TICKET = \"$sampleTicket\"" source/jira_ticket_board.py
+sed -i '7d' source/jira_ticket_board.py
+sed -i "7 i\SAMPLE_TICKET = \"$sampleTicket\"" source/jira_ticket_board.py
 else
-sed -i '4d' source/jira_ticket_board.py
-sed -i "4 i\SAMPLE_TICKET = \"\"" source/jira_ticket_board.py
+sed -i '7d' source/jira_ticket_board.py
+sed -i "7 i\SAMPLE_TICKET = \"\"" source/jira_ticket_board.py
 fi
 
 #Run program as a thread so script can close itself
