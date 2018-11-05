@@ -52,6 +52,7 @@ fi
 #check if db exists, if not create one
 
 #Can remove these assuming user has status' outlined in README.md
+#No longer using project name var in module, project assumes that everything works on status
 #Check for configured project name, if none then prompt and save
 file_content=$(head -c 12 source/jira_ticket_board.py)
 if [[ $file_content = 'PROJECT_NAME' ]]

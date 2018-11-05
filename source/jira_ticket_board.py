@@ -1,4 +1,3 @@
-PROJECT_NAME = "wherewolf support"
 SUPPORT_TICKET_STATUS = "waiting for support"
 CUSTOMER_TICKET_STATUS = "waiting for customer"
 IN_PROGRESS_TICKET_STATUS = "in progress"
@@ -17,7 +16,6 @@ SAMPLE_TICKET = "WS-462"
 #Up to 200 tickets are fetched using a thread (to prevent locking updating of the Qt table)
 #This project follows the PEP-8 style guides
 
-PROJECT_NAME = PROJECT_NAME.replace(" ", "\ ") #Format project name to UNIX compatible directory path used by JIRA API
 SUPPORT_TICKET_STATUS = SUPPORT_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
 CUSTOMER_TICKET_STATUS = CUSTOMER_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
 IN_PROGRESS_TICKET_STATUS = IN_PROGRESS_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
@@ -60,6 +58,8 @@ QUEUE_OVERDUE = 60*60*24*7 #(seconds) waiting on customer tickets older than thi
 TRANSITION_PERIOD = 5000 #(miliseconds) time between page swap
 
 BOARD_SIZE = 25
+
+DISPLAY_PERIOD = '14 days' #this is passed directly into psql query for analytics board display
 
 #grab credentials from ~/.netrc file
 secrets = netrc.netrc()
@@ -131,29 +131,31 @@ class MainWindow(QtWidgets.QMainWindow):
         #Timer to save ticket stats to db
         self.save_to_db_timer = QtCore.QTimer(self)
         self.save_to_db_timer.timeout.connect(self.save_to_db_timeout)
-        self.save_to_db_timer.start(30*60*1000) #save every half-hour
+        self.save_to_db_timer.start(10*60*1000) #save every half-hour
 
         #Pre-populate ticket list so boards do not stay empty until fetch ticket timeout
-        self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
-        self.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+        self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+        self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
         self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
         self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
         self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
         self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
 
-        #Fetch ticket history from db, so analytics doesn't have to wait for call to db
-        self.cur.execute('select stamp, support, customer from ticket_stats')
+        #Fetch ticket history from db, so analytics doesn't have to wait for call to db, only get tickets younger than DISPLAY_PERIOD
+        self.cur.execute('select stamp, support, in_progress, customer from ticket_stats where stamp > now() - %(period)s::interval', {"period": DISPLAY_PERIOD})
         self.ticket_history = self.cur.fetchall()
 
         self.date_history = list()
         self.support_history = list()
+        self.in_progress_history = list()
         self.customer_history = list()
 
         #TODO this is horrible
         for i in range(0,len(self.ticket_history)):
             self.date_history.append(self.ticket_history[i][0])
             self.support_history.append(self.ticket_history[i][1])
-            self.customer_history.append(self.ticket_history[i][2])
+            self.in_progress_history.append(self.ticket_history[i][2])
+            self.customer_history.append(self.ticket_history[i][3])
 
     def transition_page_timeout(self):
         index_Id = self.window.currentIndex()
@@ -195,8 +197,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     customer_ticket.update(summary='(please follow up with client) ' + customer_ticket.fields.summary)
 
     def fetch_tickets(self): #Thread for grabbing all tickets used by program
-        self.support_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + SUPPORT_TICKET_STATUS, maxResults=200)
-        self.customer_tickets = jira.search_issues('project=' + PROJECT_NAME + ' AND status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+        self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+        self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
         self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
         self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
         self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
@@ -208,20 +210,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.cur.execute('insert into ticket_stats (stamp,support,customer,in_progress,dev,design,test) values (%s,%s,%s,%s,%s,%s,%s)', (self.date,len(self.support_tickets),len(self.customer_tickets),len(self.in_progress_tickets),len(self.dev_tickets),len(self.design_tickets),len(self.test_tickets)))
 
-        #Fetch ticket history from db
-        self.cur.execute('select stamp, support, customer from ticket_stats')
+        #Fetch ticket history from db, only get tickets younger than DISPLAY_PERIOD
+        self.cur.execute('select stamp, support, in_progress, customer from ticket_stats where stamp > now() - %(period)s::interval', {"period": DISPLAY_PERIOD})
         self.ticket_history = self.cur.fetchall()
 
         #Empty lists so we don't get double ups
         self.date_history.clear()
         self.support_history.clear()
+        self.in_progress_history.clear()
         self.customer_history.clear()
 
         #TODO this is horrible
         for i in range(0,len(self.ticket_history)):
             self.date_history.append(self.ticket_history[i][0].astimezone(TO_ZONE))
             self.support_history.append(self.ticket_history[i][1])
-            self.customer_history.append(self.ticket_history[i][2])
+            self.in_progress_history.append(self.ticket_history[i][2])
+            self.customer_history.append(self.ticket_history[i][3])
         
 
 class TicketBoard(QtWidgets.QMainWindow):
@@ -415,8 +419,9 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.col_test[1].setText(str(len(main_window.test_tickets)))
 
         self.ax.clear()
-        self.ax.plot(main_window.date_history, main_window.support_history, 'b-*', label = 'waiting on support')
-        self.ax.plot(main_window.date_history, main_window.customer_history, 'r-+', label = 'waiting on customer')
+        self.ax.plot(main_window.date_history, main_window.support_history, 'r-', label = 'waiting on support')
+        self.ax.plot(main_window.date_history, main_window.customer_history, 'b-', label = 'waiting on customer')
+        self.ax.plot(main_window.date_history, main_window.in_progress_history, 'g-', label = 'in progress')
         self.ax.legend(loc='best')
         self.canvas.draw()
 
