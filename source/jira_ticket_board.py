@@ -4,7 +4,7 @@ IN_PROGRESS_TICKET_STATUS = "in progress"
 DEV_TICKET_STATUS = "dev"
 DESIGN_TICKET_STATUS = "design"
 TEST_TICKET_STATUS = "test"
-SAMPLE_TICKET = ""
+SAMPLE_TICKET = "100"
 
 
 #This module creates a Qt table to display overdue issues as either older than:
@@ -20,8 +20,6 @@ IN_PROGRESS_TICKET_STATUS = IN_PROGRESS_TICKET_STATUS.replace(" ", "\ ") #Format
 DEV_TICKET_STATUS = DEV_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
 DESIGN_TICKET_STATUS = DESIGN_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
 TEST_TICKET_STATUS = TEST_TICKET_STATUS.replace(" ", "\ ") #Format ticket status to UNIX compatible directory path used by JIRA API
-
-print(SUPPORT_TICKET_STATUS)
 
 from jira import JIRA
 from datetime import datetime
@@ -177,23 +175,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_to_db_thread.start() #Start thread        
 
     def check_customer_tickets(self):
-        #TODO can just grab any ticket from the waiting on customer pile in try block, if nothing returned 'transitions' will fail but then nothing to check anyway
-        #Get the transition id needed to move the ticket to the waiting on support queue
-        transition_key = '781'
-        #transitions = jira.transitions(SAMPLE_TICKET)
-        #for key in transitions:
-            #if (key.get('name') == 'Respond to support'):
-                #print(key.get('id'))
-                #transition_key = key.get('id')
-        
-        for customer_ticket in self.customer_tickets:
-            date = datetime.now() #get current date
-            customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
-            last_updated = (date - customer_ticket_date).total_seconds()
-            if (last_updated > QUEUE_OVERDUE): #If tickets are overdue
-                jira.transition_issue(customer_ticket, transition_key) #Change ticket status
-                if (customer_ticket.fields.summary[0:30] != '(please follow up with client)'): #prevent tacking more than one on to summary
-                    customer_ticket.update(summary='(please follow up with client) ' + customer_ticket.fields.summary)
+        #Try to get a transition key if there are any tickets in waiting for customer
+        try:
+            #Get list of transitions for a ticket in the waiting on customer queue
+            transitions = jira.transitions(self.customer_tickets[0].key)
+            #find the transition key needed to move from waiting for customer to waiting for support
+            for key in transitions:
+                if (key.get('name') == 'Respond to support'):
+                    transition_key = key.get('id')
+    
+            for customer_ticket in self.customer_tickets:
+                date = datetime.now() #get current date
+                customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
+                last_updated = (date - customer_ticket_date).total_seconds()
+                if (last_updated > QUEUE_OVERDUE): #If tickets are overdue
+                    jira.transition_issue(customer_ticket, transition_key) #Change ticket status
+                    if (customer_ticket.fields.summary[0:30] != '(please follow up with client)'): #prevent tacking more than one on to summary
+                        customer_ticket.update(summary='(please follow up with client) ' + customer_ticket.fields.summary)
+
+        except:
+            print("No customer tickets to manage")
 
     def fetch_tickets(self): #Thread for grabbing all tickets used by program
         self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
