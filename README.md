@@ -5,9 +5,12 @@ Provides a dashboard to display overdue tickets, with overdue tickets displayed 
 Display the current number of tickets in each project and on the Dev kanban board
 
 A secondary module performs background cleanup of old tickets waiting on a response from the customer.
-Amends '(follow up with client)' to start of summary.
-This is performed in update board class so that the background thread closes when the board is closed
-Button to respond to support will need to be named "Respond to support" for this to work and a ticket number which is permanently in waiting on customer will need to be supplied or the transition Id will need to be supplied
+Sends an automated follow up message to the client after 7 days of no response. Currently, the program will send tickets with an automated message as the last comment and older than 7 days (last updated will be reset when the first automated message is sent) to a 'cold queue' to be manually processed by a human.
+Button in Jira to send to 'cold queue' will need to be named "Respond to support" for this to work, transition id is dynamically fetched
+
+In future, this will be changed so that tickets are resolved as soon as the automated message is sent, rather than being sent to a cold queue
+
+
 
 This project assumes that your setup uses the following status':
 * waiting on support
@@ -30,4 +33,16 @@ Future features:
 * Alert for new/unassigned tickets within 1 hour of coming in
 * Flow diagram for app build tickets moving through the workflow
 * Save ticketing statistics by the hour into a local db which will be used for graphing analytics
+
+
+
+psql ticketdb to access db
+select * from ticket_stats;
+timedate is stored in UTC and converted to local in python script
+
+add model language diagram
+add intended workflow for jira helper and support staff
+
+
+Add display for current SLAs, SLA will need to be named 'Time to first response'
 

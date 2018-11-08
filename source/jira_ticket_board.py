@@ -4,7 +4,7 @@ IN_PROGRESS_TICKET_STATUS = "in progress"
 DEV_TICKET_STATUS = "dev"
 DESIGN_TICKET_STATUS = "design"
 TEST_TICKET_STATUS = "test"
-SAMPLE_TICKET = "100"
+AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
 
 
 #This module creates a Qt table to display overdue issues as either older than:
@@ -23,6 +23,7 @@ TEST_TICKET_STATUS = TEST_TICKET_STATUS.replace(" ", "\ ") #Format ticket status
 
 from jira import JIRA
 from datetime import datetime
+from datetime import timedelta
 from dateutil import parser #Used to truncate and convert string to datetime Obj
 from dateutil import tz #used to convert local-UTC
 import netrc
@@ -52,7 +53,7 @@ RED_ALERT_DELAY = 60*60*24*7 #(seconds) tickets with 'Last Updated' older than t
 MELT_DOWN_DELAY = 60*60*24*14 #(seconds) tickets with 'Last Updated' older than this are solid red
 QUEUE_OVERDUE = 60*60*24*7 #(seconds) waiting on customer tickets older than this are thrown back into waiting on support with
 #(follow up with client) text added to summary
-TRANSITION_PERIOD = 5000 #(miliseconds) time between page swap
+TRANSITION_PERIOD = 10000 #(miliseconds) time between page swap
 
 BOARD_SIZE = 25
 
@@ -67,9 +68,11 @@ TO_ZONE = tz.tzlocal()
 
 
 #TODO
+#Place check_queue into own class
 #Place each class in own module
 #Save in local db
-#use flags to check if waiting on customer support cleanout is required, place cleanup in own class and only execute if flag is set in bash
+#Silence waiting for customer ticket updates so last_updated is not affected
+#Remove update to customer ticket summary and write an internal comment instead
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -128,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #Timer to save ticket stats to db
         self.save_to_db_timer = QtCore.QTimer(self)
         self.save_to_db_timer.timeout.connect(self.save_to_db_timeout)
-        self.save_to_db_timer.start(10*60*1000) #save every half-hour
+        self.save_to_db_timer.start(10*60*1000) #save every 10 mins
 
         #Pre-populate ticket list so boards do not stay empty until fetch ticket timeout
         self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
@@ -161,10 +164,13 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.window.setCurrentIndex(0)
 
-    def check_customer_tickets_timeout(self): 
-        if (SAMPLE_TICKET): #if sample ticket is supplied then we can proceed
-            self.check_customer_tickets_thread = threading.Thread(target=self.check_customer_tickets) #Load thread into obj
-            self.check_customer_tickets_thread.start() #Start thread
+    def check_customer_tickets_timeout(self):
+        try: #This will fail if an arg is not supplied
+            if sys.argv[1] == "cleanup": #if cleanup specified in bash, this is the second arg of call to program
+                self.check_customer_tickets_thread = threading.Thread(target=self.check_customer_tickets) #Load thread into obj
+                self.check_customer_tickets_thread.start() #Start thread
+        except:
+            print("Not running clean up")
 
     def fetch_tickets_timeout(self): 
         self.fetch_tickets_thread = threading.Thread(target=self.fetch_tickets) #Load thread into obj
@@ -179,22 +185,27 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             #Get list of transitions for a ticket in the waiting on customer queue
             transitions = jira.transitions(self.customer_tickets[0].key)
-            #find the transition key needed to move from waiting for customer to waiting for support
+            #Find the transition key needed to move from waiting for customer to cold tickets queue
             for key in transitions:
-                if (key.get('name') == 'Respond to support'):
+                if (key.get('name') == 'No reply transition'):
                     transition_key = key.get('id')
-    
+            
             for customer_ticket in self.customer_tickets:
-                date = datetime.now() #get current date
-                customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
-                last_updated = (date - customer_ticket_date).total_seconds()
-                if (last_updated > QUEUE_OVERDUE): #If tickets are overdue
-                    jira.transition_issue(customer_ticket, transition_key) #Change ticket status
-                    if (customer_ticket.fields.summary[0:30] != '(please follow up with client)'): #prevent tacking more than one on to summary
-                        customer_ticket.update(summary='(please follow up with client) ' + customer_ticket.fields.summary)
+                if customer_ticket.key == 'WS-909':
+                    date = datetime.now() #get current date
+                    customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
+                    last_updated = (date - customer_ticket_date).total_seconds()
+                    if (last_updated > QUEUE_OVERDUE): #If tickets are overdue
+                        #Fetch the comments obj for the current ticket
+                        comments = jira.issue(customer_ticket.key)
+                        #Check last comment in the ticket and see if it was the AUTOMATED_MESSAGE, if so client has not responded to automation message. Throw into cold queue
+                        if AUTOMATED_MESSAGE in comments.raw['fields']['comment']['comments'][len(comments.raw['fields']['comment']['comments'])-1]['body']:
+                            jira.transition_issue(customer_ticket, transition_key)
+                        else: #AUTOMATION_MESSAGE not found, then ticket is just old, add AUTOMATION_MESSAGE to ticket
+                            jira.add_comment(customer_ticket.key, AUTOMATED_MESSAGE, is_internal = False)
 
         except:
-            print("No customer tickets to manage")
+            print("No tickets to check or invalid transition key")
 
     def fetch_tickets(self): #Thread for grabbing all tickets used by program
         self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
@@ -222,6 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #TODO this is horrible
         for i in range(0,len(self.ticket_history)):
+            #Add timedate to date_history from UTC to local time zone
             self.date_history.append(self.ticket_history[i][0].astimezone(TO_ZONE))
             self.support_history.append(self.ticket_history[i][1])
             self.in_progress_history.append(self.ticket_history[i][2])
@@ -298,6 +310,7 @@ class TicketBoard(QtWidgets.QMainWindow):
         
         date = QDate.currentDate()
         time = QTime.currentTime()
+        
         self.col_assigned[0].setText(date.toString(Qt.DefaultLocaleLongDate))
         self.col_last_updated[0].setText(time.toString(Qt.DefaultLocaleLongDate))
         if (self.red_phase): #pulse red_phase for flashing redlert tickets
@@ -308,6 +321,15 @@ class TicketBoard(QtWidgets.QMainWindow):
             date = datetime.now() #get current date
             ticket_date = parser.parse(support_ticket.fields.updated[0:23]) #truncate and convert string to datetime obj
             last_updated = (date - ticket_date).total_seconds()
+            #TODO dynamically get 'customfield_11206 val
+            try: #Get the ongoingCycle SLA, ongoingCycle does not always exist and is never an array
+                open_for_hours = str(timedelta(seconds = int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis']/1000)))
+
+            except: #Grab last dictionary in completedCycles array instead, is always an array
+                open_for_hours = str(timedelta(seconds = int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles'])-1]['elapsedTime']['millis']/1000)))
+
+            print(open_for_hours)
+
             if (last_updated > BLACK_ALERT_DELAY and count <= BOARD_SIZE+1): #Only display if board is not full
                 if (last_updated > MELT_DOWN_DELAY): #Things are serious!
                     self.col_key[count].setStyleSheet('color: red')
@@ -346,7 +368,7 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
 
         self.figure = Figure(figsize=(7, 4), dpi=100)
         self.canvas = FigureCanvas(self.figure)
-        analytics_board_layout.addWidget(self.canvas,3,1,-1,3)
+        analytics_board_layout.addWidget(self.canvas,3,0,-1,6) #add plot to analytics board
         self.ax = self.figure.add_subplot(111)
         self.ax.set_xlabel('date')
         self.ax.set_ylabel('# of tickets')
@@ -419,8 +441,8 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.col_test[1].setText(str(len(main_window.test_tickets)))
 
         self.ax.clear()
-        self.ax.plot(main_window.date_history, main_window.support_history, 'r-', label = 'waiting on support')
-        self.ax.plot(main_window.date_history, main_window.customer_history, 'b-', label = 'waiting on customer')
+        self.ax.plot(main_window.date_history, main_window.support_history, 'r-', label = 'waiting for support')
+        self.ax.plot(main_window.date_history, main_window.customer_history, 'b-', label = 'waiting for customer')
         self.ax.plot(main_window.date_history, main_window.in_progress_history, 'g-', label = 'in progress')
         self.ax.legend(loc='best')
         self.canvas.draw()
@@ -435,5 +457,5 @@ if __name__ == '__main__':
     ticket_board = TicketBoard()
     analytics_board = AnalyticsBoard()
     main_window.showMaximized()
-    main_window.setWindowTitle('The coolest program in the world')
+    main_window.setWindowTitle('Jira Helper')
     sys.exit(app.exec_())

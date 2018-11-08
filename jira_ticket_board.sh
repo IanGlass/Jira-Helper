@@ -34,7 +34,7 @@ read urlVar
 echo account $urlVar >> ~/.netrc
 
 #grab and write login
-echo please enter you Jira username/email address
+echo please enter you Jira email address
 read userName
 echo login $userName >> ~/.netrc
 
@@ -87,20 +87,13 @@ sed -i "6 i\TEST_TICKET_STATUS = \"$testStatus\"" source/jira_ticket_board.py
 fi
 
 #Change to use python flags
-echo Would you like to run a cleanup of the \'waiting on customer queue\'?
+echo Would you like to run a cleanup of the \'waiting for customer queue\'?
 read reply
 if [[ $reply == y ]]
-then 
-echo please enter the ticket number of a sample ticket in the project
-read sampleTicket
-#write the sample ticket name to the fourth line
-sed -i '7d' source/jira_ticket_board.py
-sed -i "7 i\SAMPLE_TICKET = \"$sampleTicket\"" source/jira_ticket_board.py
+then
+echo running cleanup
+#Run program as a thread so script can close itself with cleanup
+python source/jira_ticket_board.py cleanup &
 else
-sed -i '7d' source/jira_ticket_board.py
-sed -i "7 i\SAMPLE_TICKET = \"\"" source/jira_ticket_board.py
-fi
-
-#Run program as a thread so script can close itself
 python source/jira_ticket_board.py &
-
+fi
