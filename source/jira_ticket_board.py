@@ -53,7 +53,7 @@ RED_ALERT_DELAY = 60*60*24*7 #(seconds) tickets with 'Last Updated' older than t
 MELT_DOWN_DELAY = 60*60*24*14 #(seconds) tickets with 'Last Updated' older than this are solid red
 QUEUE_OVERDUE = 60*60*24*7 #(seconds) waiting on customer tickets older than this are thrown back into waiting on support with
 #(follow up with client) text added to summary
-TRANSITION_PERIOD = 10000 #(miliseconds) time between page swap
+TRANSITION_PERIOD = 20000 #(miliseconds) time between page swap
 
 BOARD_SIZE = 25
 
@@ -152,7 +152,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #TODO this is horrible
         for i in range(0,len(self.ticket_history)):
-            self.date_history.append(self.ticket_history[i][0])
+            #Add timedate to date_history from UTC to local time zone
+            self.date_history.append(self.ticket_history[i][0].astimezone(TO_ZONE))
             self.support_history.append(self.ticket_history[i][1])
             self.in_progress_history.append(self.ticket_history[i][2])
             self.customer_history.append(self.ticket_history[i][3])
@@ -253,6 +254,7 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.col_assigned = list()
         self.col_summary = list()
         self.col_last_updated = list()
+        self.col_sla = list()
 
         self.fnt = QtGui.QFont(FONT, FONT_SIZE)
         for i in range(0,BOARD_SIZE+2): #Build the ticket board
@@ -272,6 +274,10 @@ class TicketBoard(QtWidgets.QMainWindow):
             self.col_last_updated[i].setFont(self.fnt)
             ticket_board_layout.addWidget(self.col_last_updated[i], i, 3)
 
+            self.col_sla.append(QtWidgets.QLabel())
+            self.col_sla[i].setFont(self.fnt)
+            ticket_board_layout.addWidget(self.col_sla[i], i, 4)
+
         #Fill column titles
         self.fnt.setBold(True)
         self.col_key[1].setFont(self.fnt)
@@ -282,10 +288,13 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.col_assigned[1].setText("Assignee")
         self.col_last_updated[1].setFont(self.fnt)
         self.col_last_updated[1].setText("Last Updated")
+        self.col_sla[1].setFont(self.fnt)
+        self.col_sla[1].setText("Open for")
         self.fnt.setBold(False) #Reset font
 
+        #Make time and date display large
+        self.col_summary[0].setStyleSheet('font-size: 40px')
         self.col_assigned[0].setStyleSheet('font-size: 40px')
-        self.col_last_updated[0].setStyleSheet('font-size: 40px')
 
         self.red_phase = False #used to flash rows if red alert
 
@@ -299,11 +308,13 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.update_board()
 
     def clear_widgets(self): #Ensures table is cleared if less than BOARD_SIZE issues are overdue
+        #TODO use .clear to clear widget lists
         for i in range(2,BOARD_SIZE+2): #Don't clear first or second row, which contain time and col headings
             self.col_key[i].setText("")
             self.col_summary[i].setText("")
             self.col_assigned[i].setText("")
             self.col_last_updated[i].setText("")
+            self.col_sla[i].setText("")
 
     def update_board(self):
         count = 2 #Prevent write over column titles and datetime
@@ -311,8 +322,8 @@ class TicketBoard(QtWidgets.QMainWindow):
         date = QDate.currentDate()
         time = QTime.currentTime()
         
-        self.col_assigned[0].setText(date.toString(Qt.DefaultLocaleLongDate))
-        self.col_last_updated[0].setText(time.toString(Qt.DefaultLocaleLongDate))
+        self.col_summary[0].setText(date.toString(Qt.DefaultLocaleLongDate))
+        self.col_assigned[0].setText(time.toString(Qt.DefaultLocaleLongDate))
         if (self.red_phase): #pulse red_phase for flashing redlert tickets
             self.red_phase = False
         else:
@@ -323,12 +334,10 @@ class TicketBoard(QtWidgets.QMainWindow):
             last_updated = (date - ticket_date).total_seconds()
             #TODO dynamically get 'customfield_11206 val
             try: #Get the ongoingCycle SLA, ongoingCycle does not always exist and is never an array
-                open_for_hours = str(timedelta(seconds = int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis']/1000)))
+                open_for_hours = timedelta(seconds = int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis']/1000))
 
             except: #Grab last dictionary in completedCycles array instead, is always an array
-                open_for_hours = str(timedelta(seconds = int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles'])-1]['elapsedTime']['millis']/1000)))
-
-            print(open_for_hours)
+                open_for_hours = timedelta(seconds = int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles'])-1]['elapsedTime']['millis']/1000))
 
             if (last_updated > BLACK_ALERT_DELAY and count <= BOARD_SIZE+1): #Only display if board is not full
                 if (last_updated > MELT_DOWN_DELAY): #Things are serious!
@@ -336,26 +345,31 @@ class TicketBoard(QtWidgets.QMainWindow):
                     self.col_summary[count].setStyleSheet('color: red') 
                     self.col_assigned[count].setStyleSheet('color: red')
                     self.col_last_updated[count].setStyleSheet('color: red')
+                    self.col_sla[count].setStyleSheet('color: red')
                 elif (last_updated > RED_ALERT_DELAY): #Things are not so Ok
                     if (self.red_phase):
                         self.col_key[count].setStyleSheet('color: red') 
                         self.col_summary[count].setStyleSheet('color: red') 
                         self.col_assigned[count].setStyleSheet('color: red') 
                         self.col_last_updated[count].setStyleSheet('color: red') 
+                        self.col_sla[count].setStyleSheet('color: red')
                     else:
                         self.col_key[count].setStyleSheet('color: black') 
                         self.col_summary[count].setStyleSheet('color: black')
                         self.col_assigned[count].setStyleSheet('color: black') 
                         self.col_last_updated[count].setStyleSheet('color: black')
+                        self.col_sla[count].setStyleSheet('color: black')
                 else : #Things are still Okish
                     self.col_key[count].setStyleSheet('color: black') 
                     self.col_summary[count].setStyleSheet('color: black') 
                     self.col_assigned[count].setStyleSheet('color: black') 
-                    self.col_last_updated[count].setStyleSheet('color: black') 
+                    self.col_last_updated[count].setStyleSheet('color: black')
+                    self.col_sla[count].setStyleSheet('color: black')
                 self.col_key[count].setText(str(support_ticket.key))
                 self.col_summary[count].setText(str(support_ticket.fields.summary))
                 self.col_assigned[count].setText(str(support_ticket.fields.assignee))
                 self.col_last_updated[count].setText(str(support_ticket.fields.updated))
+                self.col_sla[count].setText(str(open_for_hours))
                 count = count + 1
 
 class AnalyticsBoard(QtWidgets.QMainWindow):
