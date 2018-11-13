@@ -22,9 +22,6 @@ from analytics import AnalyticsBoard
 
 AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
 
-FONT = "Times"  # Font used to display text
-FONT_SIZE = 12
-
 # TODO make these defined from config page in db
 TRANSITION_PERIOD = 20000  # (miliseconds) time between page swap
 QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older than
@@ -39,7 +36,6 @@ jira = JIRA(basic_auth=(username, password), options={'server': account})
 
 # TODO
 # Place check_queue into own class
-# Place each class in own module
 # Save in local db
 # Silence waiting for customer ticket updates so last_updated is not affected
 # Remove update to customer ticket summary and write an internal comment instead
@@ -50,7 +46,28 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
 
         self.window = QtWidgets.QStackedWidget()  # Create the main widget for the page
-        self.setCentralWidget(self.window)
+
+        self.main_window_widget = QtWidgets.QWidget()
+        self.main_window_layout = QtWidgets.QGridLayout()
+        self.main_window_widget.setLayout(self.main_window_layout)
+        self.menu_widget = QtWidgets.QWidget()
+        self.menu_layout = QtWidgets.QHBoxLayout()
+        self.menu_widget.setLayout(self.menu_layout)
+        self.main_window_layout.addWidget(self.menu_widget, 0, 0)
+        self.main_window_layout.addWidget(self.window, 1, 0)
+        self.setCentralWidget(self.main_window_widget)
+
+        self.config_button = QtWidgets.QPushButton()
+        self.config_button.setText("Settings")
+        self.config_button.clicked.connect(self.push_config_button)
+        self.menu_layout.addWidget(self.config_button)
+
+        self.date = QtWidgets.QLabel()
+        self.date.setStyleSheet('font-size: 40px')
+        self.time = QtWidgets.QLabel()
+        self.time.setStyleSheet('font-size: 40px')
+        self.menu_layout.addWidget(self.date)
+        self.menu_layout.addWidget(self.time)
 
         try:  # This will fail if an arg is not supplied
             if sys.argv[1] == "cleanup":  # If cleanup specified in bash, this is the second arg of call to program
@@ -65,6 +82,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.transition_page_timer = QtCore.QTimer(self)
         self.transition_page_timer.timeout.connect(self.transition_page_timeout)
         self.transition_page_timer.start(TRANSITION_PERIOD)  # Transition every 10 seconds
+
+        # Timer fetch tickets from JIRA server
+        self.update_datetime_timer = QtCore.QTimer(self)
+        self.update_datetime_timer.timeout.connect(self.update_datetime_timeout)
+        self.update_datetime_timer.start(1000)  # update every 1 second
+
+    def update_datetime_timeout(self):
+        self.update_datetime_thread = threading.Thread(target=self.update_datetime)  # Load thread into obj
+        self.update_datetime_thread.start()  # Start thread
+
+    def update_datetime(self):
+        Qdate = QDate.currentDate()
+        Qtime = QTime.currentTime()
+        self.date.setText(Qdate.toString(Qt.DefaultLocaleLongDate))
+        self.time.setText(Qtime.toString(Qt.DefaultLocaleLongDate))
 
     def transition_page_timeout(self):
         index_Id = self.window.currentIndex()
@@ -107,8 +139,10 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             print("No tickets to check or invalid transition key")
 
+    def push_config_button(self):
+        print("Hello")
 
-# Create some global objects used by all modules
+
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     main_window = MainWindow()
@@ -118,4 +152,5 @@ if __name__ == '__main__':
     main_window.window.addWidget(ticket_board.ticket_board_widget)  # Add the ticket board widget/layout to the main window widget
     analytics_board = AnalyticsBoard()
     main_window.window.addWidget(analytics_board.analytics_board_widget)  # Add the analytics board widget/layout to the main window widget
-    sys.exit(app.exec_())
+    main_window.show()
+    sys.exit(app.exec_())  # Launch event loop

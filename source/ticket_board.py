@@ -44,6 +44,7 @@ username, account, password = secrets.authenticators('Jira-Credentials')
 
 # Create a JIRA object using netrc credentials
 jira = JIRA(basic_auth=(username, password), options={'server': account})
+# TODO use setStyleSheet() instead of setFont
 
 
 class TicketBoard(QtWidgets.QMainWindow):
@@ -61,7 +62,7 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.col_sla = list()
 
         self.fnt = QtGui.QFont(FONT, FONT_SIZE)
-        for i in range(0, BOARD_SIZE + 2):  # Build the ticket board
+        for i in range(0, BOARD_SIZE + 1):  # Build the ticket board
             self.col_key.append(QtWidgets.QLabel())
             self.col_key[i].setFont(self.fnt)
             self.ticket_board_layout.addWidget(self.col_key[i], i, 0)
@@ -84,21 +85,17 @@ class TicketBoard(QtWidgets.QMainWindow):
 
         # Fill column titles
         self.fnt.setBold(True)
-        self.col_key[1].setFont(self.fnt)
-        self.col_key[1].setText("Ticket Number")
-        self.col_summary[1].setFont(self.fnt)
-        self.col_summary[1].setText("Summary")
-        self.col_assigned[1].setFont(self.fnt)
-        self.col_assigned[1].setText("Assignee")
-        self.col_last_updated[1].setFont(self.fnt)
-        self.col_last_updated[1].setText("Last Updated")
-        self.col_sla[1].setFont(self.fnt)
-        self.col_sla[1].setText("Open for")
+        self.col_key[0].setFont(self.fnt)
+        self.col_key[0].setText("Ticket Number")
+        self.col_summary[0].setFont(self.fnt)
+        self.col_summary[0].setText("Summary")
+        self.col_assigned[0].setFont(self.fnt)
+        self.col_assigned[0].setText("Assignee")
+        self.col_last_updated[0].setFont(self.fnt)
+        self.col_last_updated[0].setText("Last Updated")
+        self.col_sla[0].setFont(self.fnt)
+        self.col_sla[0].setText("Open for")
         self.fnt.setBold(False)  # Reset font
-
-        # Make time and date display large
-        self.col_summary[0].setStyleSheet('font-size: 40px')
-        self.col_assigned[0].setStyleSheet('font-size: 40px')
 
         self.red_phase = False  # Used to flash rows if red alert
 
@@ -150,7 +147,7 @@ class TicketBoard(QtWidgets.QMainWindow):
 
     def clear_widgets(self):  # Ensures table is cleared if less than BOARD_SIZE issues are overdue
         # TODO use .clear to clear widget lists
-        for i in range(2, BOARD_SIZE + 2):  # Don't clear first or second row, which contain time and col headings
+        for i in range(1, BOARD_SIZE + 1):  # Don't clear first or second row, which contain time and col headings
             self.col_key[i].setText("")
             self.col_summary[i].setText("")
             self.col_assigned[i].setText("")
@@ -158,13 +155,8 @@ class TicketBoard(QtWidgets.QMainWindow):
             self.col_sla[i].setText("")
 
     def update_board(self):
-        count = 2  # Prevent write over column titles and datetime
+        count = 1  # Prevent write over column titles and datetime
 
-        date = QDate.currentDate()
-        time = QTime.currentTime()
-
-        self.col_summary[0].setText(date.toString(Qt.DefaultLocaleLongDate))
-        self.col_assigned[0].setText(time.toString(Qt.DefaultLocaleLongDate))
         if (self.red_phase):  # Pulse red_phase for flashing redlert tickets
             self.red_phase = False
         else:
