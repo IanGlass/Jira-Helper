@@ -16,6 +16,9 @@ pip install jira
 #Install for postgresql
 pip install psycopg2
 
+#Install linter used when modifying code
+pip install pycodestyle
+
 #install matplotlib required to plot in analytics board
 python -m pip install -U matplotlib
 
