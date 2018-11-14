@@ -38,12 +38,6 @@ MELT_DOWN_DELAY = 60 * 60 * 24 * 14  # (seconds) tickets with 'Last Updated' old
 
 BOARD_SIZE = 25
 
-# Grab credentials from ~/.netrc file
-secrets = netrc.netrc()
-username, account, password = secrets.authenticators('Jira-Credentials')
-
-# Create a JIRA object using netrc credentials
-jira = JIRA(basic_auth=(username, password), options={'server': account})
 # TODO use setStyleSheet() instead of setFont
 
 
@@ -100,12 +94,17 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.red_phase = False  # Used to flash rows if red alert
 
         # Pre-populate ticket list so boards do not stay empty until fetch ticket timeout
-        self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
-        self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
-        self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
-        self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
-        self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
-        self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+        try:
+            # Create a JIRA object using netrc credentials
+            jira = JIRA(basic_auth=(database.settings.get('username'), database.settings.get('api_key')), options={'server': database.settings.get('jira_url')})
+            self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+            self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+            self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
+            self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
+            self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
+            self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+        except:
+            print("Invalid credentials")
 
         # Timer used to update board
         self.update_board_timer = QtCore.QTimer(self)
@@ -135,12 +134,17 @@ class TicketBoard(QtWidgets.QMainWindow):
         self.save_ticket_history_thread.start()  # Start thread
 
     def fetch_tickets(self):  # Thread for grabbing all tickets used by program
-        self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
-        self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
-        self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
-        self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
-        self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
-        self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+        try:
+            # Create a JIRA object using netrc credentials
+            jira = JIRA(basic_auth=(database.settings.get('username'), database.settings.get('api_key')), options={'server': database.settings.get('jira_url')})
+            self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
+            self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
+            self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
+            self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
+            self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
+            self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+        except:
+            print("Invalid credentials")
 
     def save_ticket_history(self):
         database.save_ticket_history(len(self.support_tickets), len(self.customer_tickets), len(self.in_progress_tickets), len(self.dev_tickets), len(self.design_tickets), len(self.test_tickets))
@@ -161,47 +165,51 @@ class TicketBoard(QtWidgets.QMainWindow):
             self.red_phase = False
         else:
             self.red_phase = True
-        for support_ticket in self.support_tickets:
-            date = datetime.now()  # Get current date
-            # Truncate and convert string to datetime obj
-            ticket_date = parser.parse(support_ticket.fields.updated[0:23])
-            last_updated = (date - ticket_date).total_seconds()
-            # TODO dynamically get 'customfield_11206 val
-            try:  # Get the ongoingCycle SLA, ongoingCycle does not always exist and is never an array
-                open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis'] / 1000))
+        try:
+            for support_ticket in self.support_tickets:
+                date = datetime.now()  # Get current date
+                # Truncate and convert string to datetime obj
+                ticket_date = parser.parse(support_ticket.fields.updated[0:23])
+                last_updated = (date - ticket_date).total_seconds()
+                # TODO dynamically get 'customfield_11206 val
+                try:  # Get the ongoingCycle SLA, ongoingCycle does not always exist and is never an array
+                    open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis'] / 1000))
 
-            except:  # Grab last dictionary in completedCycles array instead, is always an array
-                open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles']) - 1]['elapsedTime']['millis'] / 1000))
+                except:  # Grab last dictionary in completedCycles array instead, is always an array
+                    open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles']) - 1]['elapsedTime']['millis'] / 1000))
 
-            if (last_updated > BLACK_ALERT_DELAY and count <= BOARD_SIZE + 1):  # Only display if board is not full
-                if (last_updated > MELT_DOWN_DELAY):  # Things are serious!
-                    self.col_key[count].setStyleSheet('color: red')
-                    self.col_summary[count].setStyleSheet('color: red')
-                    self.col_assigned[count].setStyleSheet('color: red')
-                    self.col_last_updated[count].setStyleSheet('color: red')
-                    self.col_sla[count].setStyleSheet('color: red')
-                elif (last_updated > RED_ALERT_DELAY):  # Things are not so Ok
-                    if (self.red_phase):
+                if (last_updated > BLACK_ALERT_DELAY and count <= BOARD_SIZE + 1):  # Only display if board is not full
+                    if (last_updated > MELT_DOWN_DELAY):  # Things are serious!
                         self.col_key[count].setStyleSheet('color: red')
                         self.col_summary[count].setStyleSheet('color: red')
                         self.col_assigned[count].setStyleSheet('color: red')
                         self.col_last_updated[count].setStyleSheet('color: red')
                         self.col_sla[count].setStyleSheet('color: red')
-                    else:
+                    elif (last_updated > RED_ALERT_DELAY):  # Things are not so Ok
+                        if (self.red_phase):
+                            self.col_key[count].setStyleSheet('color: red')
+                            self.col_summary[count].setStyleSheet('color: red')
+                            self.col_assigned[count].setStyleSheet('color: red')
+                            self.col_last_updated[count].setStyleSheet('color: red')
+                            self.col_sla[count].setStyleSheet('color: red')
+                        else:
+                            self.col_key[count].setStyleSheet('color: black')
+                            self.col_summary[count].setStyleSheet('color: black')
+                            self.col_assigned[count].setStyleSheet('color: black')
+                            self.col_last_updated[count].setStyleSheet('color: black')
+                            self.col_sla[count].setStyleSheet('color: black')
+                    else:  # Things are still Okish
                         self.col_key[count].setStyleSheet('color: black')
                         self.col_summary[count].setStyleSheet('color: black')
                         self.col_assigned[count].setStyleSheet('color: black')
                         self.col_last_updated[count].setStyleSheet('color: black')
                         self.col_sla[count].setStyleSheet('color: black')
-                else:  # Things are still Okish
-                    self.col_key[count].setStyleSheet('color: black')
-                    self.col_summary[count].setStyleSheet('color: black')
-                    self.col_assigned[count].setStyleSheet('color: black')
-                    self.col_last_updated[count].setStyleSheet('color: black')
-                    self.col_sla[count].setStyleSheet('color: black')
-                self.col_key[count].setText(str(support_ticket.key))
-                self.col_summary[count].setText(str(support_ticket.fields.summary))
-                self.col_assigned[count].setText(str(support_ticket.fields.assignee))
-                self.col_last_updated[count].setText(str(support_ticket.fields.updated))
-                self.col_sla[count].setText(str(open_for_hours))
-                count = count + 1
+                    self.col_key[count].setText(str(support_ticket.key))
+                    self.col_summary[count].setText(str(support_ticket.fields.summary))
+                    self.col_assigned[count].setText(str(support_ticket.fields.assignee))
+                    self.col_last_updated[count].setText(str(support_ticket.fields.updated))
+                    self.col_sla[count].setText(str(open_for_hours))
+                    count = count + 1
+
+        except:
+            print("No support tickets")

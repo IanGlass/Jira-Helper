@@ -29,16 +29,8 @@ TRANSITION_PERIOD = 10 * 1000  # (miliseconds) time between page swap
 QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older than
 # this are thrown back into waiting on support with (follow up with client) text added to summary
 
-# Grab credentials from ~/.netrc file
-secrets = netrc.netrc()
-username, account, password = secrets.authenticators('Jira-Credentials')
-
-# Create a JIRA object using netrc credentials
-jira = JIRA(basic_auth=(username, password), options={'server': account})
-
 # TODO
 # Place check_queue into own class
-# Save in local db
 # Silence waiting for customer ticket updates so last_updated is not affected
 # Remove update to customer ticket summary and write an internal comment instead
 # Create gui constructor methods for each class
@@ -117,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def clean_up(self):
         # Try to get a transition key if there are any tickets in waiting for customer
         try:
+            jira = JIRA(basic_auth=(database.settings.get('username'), database.settings.get('api_key')), options={'server': database.settings.get('jira_url')})
             # Get list of transitions for a ticket in the waiting on customer queue
             transitions = jira.transitions(self.customer_tickets[0].key)
             # Find the transition key needed to move from waiting for customer to cold tickets queue
