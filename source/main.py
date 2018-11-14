@@ -19,11 +19,13 @@ from dateutil import parser
 
 from ticket_board import TicketBoard
 from analytics import AnalyticsBoard
+from settings import SettingsBoard
+from database import database
 
 AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
 
-# TODO make these defined from config page in db
-TRANSITION_PERIOD = 20000  # (miliseconds) time between page swap
+# TODO make these defined from settings page in db
+TRANSITION_PERIOD = 10 * 1000  # (miliseconds) time between page swap
 QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older than
 # this are thrown back into waiting on support with (follow up with client) text added to summary
 
@@ -39,6 +41,8 @@ jira = JIRA(basic_auth=(username, password), options={'server': account})
 # Save in local db
 # Silence waiting for customer ticket updates so last_updated is not affected
 # Remove update to customer ticket summary and write an internal comment instead
+# Create gui constructor methods for each class
+# Remove self. where its not needed
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -57,10 +61,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_window_layout.addWidget(self.window, 1, 0)
         self.setCentralWidget(self.main_window_widget)
 
-        self.config_button = QtWidgets.QPushButton()
-        self.config_button.setText("Settings")
-        self.config_button.clicked.connect(self.push_config_button)
-        self.menu_layout.addWidget(self.config_button)
+        self.settings_submit_button = QtWidgets.QPushButton()
+        self.settings_submit_button.setText("Settings")
+        self.settings_submit_button.clicked.connect(self.push_settings_button)
+        self.menu_layout.addWidget(self.settings_submit_button)
 
         self.date = QtWidgets.QLabel()
         self.date.setStyleSheet('font-size: 40px')
@@ -81,7 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # Timer used to transition the page
         self.transition_page_timer = QtCore.QTimer(self)
         self.transition_page_timer.timeout.connect(self.transition_page_timeout)
-        self.transition_page_timer.start(TRANSITION_PERIOD)  # Transition every 10 seconds
+        self.transition_page_timer.start(TRANSITION_PERIOD)
 
         # Timer fetch tickets from JIRA server
         self.update_datetime_timer = QtCore.QTimer(self)
@@ -139,8 +143,31 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             print("No tickets to check or invalid transition key")
 
-    def push_config_button(self):
-        print("Hello")
+    def push_settings_button(self):
+        self.transition_page_timer.stop()
+        self.window.addWidget(settings_board.settings_board_widget)
+        self.window.setCurrentWidget(settings_board.settings_board_widget)
+
+        # Load values
+        settings_board.load_from_cache()
+
+        # Remove all currently connected functions
+        self.settings_submit_button.disconnect()
+        # Change button submit to save current results
+        self.settings_submit_button.clicked.connect(self.push_submit_button)
+        self.settings_submit_button.setText("Submit")
+
+    def push_submit_button(self):
+        self.transition_page_timer.start()
+        self.window.removeWidget(settings_board.settings_board_widget)  # Remove settings board so it doesn't show in transition
+        self.window.setCurrentWidget(ticket_board.ticket_board_widget)  # Don't wait for transition to change back to another page
+
+        # Save values to cache and db
+        settings_board.save_to_cache()
+
+        self.settings_submit_button.disconnect()
+        self.settings_submit_button.clicked.connect(self.push_settings_button)
+        self.settings_submit_button.setText("Settings")
 
 
 if __name__ == '__main__':
@@ -152,5 +179,6 @@ if __name__ == '__main__':
     main_window.window.addWidget(ticket_board.ticket_board_widget)  # Add the ticket board widget/layout to the main window widget
     analytics_board = AnalyticsBoard()
     main_window.window.addWidget(analytics_board.analytics_board_widget)  # Add the analytics board widget/layout to the main window widget
+    settings_board = SettingsBoard()
     main_window.show()
     sys.exit(app.exec_())  # Launch event loop
