@@ -48,7 +48,7 @@ class DB():
             test_status TEXT UNIQUE)''')
 
         # Fetch whats currently in DB and add to form on startup, all pages will use these vars
-        self.settings = dict(jira_url = 0, username = 0, api_key = 0, support_status = 0, customer_status = 0, in_progress_status = 0, dev_status = 0, design_status = 0, test_status = 0)
+        self.settings = dict(jira_url=0, username=0, api_key=0, support_status=0, customer_status=0, in_progress_status=0, dev_status=0, design_status=0, test_status=0)
         self.fetch_settings()
 
     def save_ticket_history(self, support, customer, in_progress, dev, design, test):
@@ -64,7 +64,6 @@ class DB():
         return history
 
     def save_settings(self):
-        print('Saving settings')
         # Delete everything in the table first
         self.cur.execute('delete from settings')
         # Add updated values to the table
