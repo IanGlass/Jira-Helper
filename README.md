@@ -43,6 +43,7 @@ psql ticketdb to access db
 select * from ticket_stats;
 timedate is stored in UTC and converted to local in python script
 
+Analytics board will take up to 5 mins to start populating after correct credentials are entered
  
 
 

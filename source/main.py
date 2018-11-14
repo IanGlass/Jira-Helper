@@ -109,15 +109,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def clean_up(self):
         # Try to get a transition key if there are any tickets in waiting for customer
         try:
-            jira = JIRA(basic_auth=(database.settings.get('username'), database.settings.get('api_key')), options={'server': database.settings.get('jira_url')})
+            jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
             # Get list of transitions for a ticket in the waiting on customer queue
-            transitions = jira.transitions(self.customer_tickets[0].key)
+            transitions = jira.transitions(ticket_board.customer_tickets[0].key)
             # Find the transition key needed to move from waiting for customer to cold tickets queue
             for key in transitions:
-                if (key.get('name') == 'No reply transition'):
-                    transition_key = key.get('id')
+                if (key['name'] == 'No reply transition'):
+                    transition_key = key['id']
 
-            for customer_ticket in self.customer_tickets:
+            for customer_ticket in ticket_board.customer_tickets:
                 if customer_ticket.key == 'WS-909':
                     date = datetime.now()  # Get current date
                     # Truncate and convert string to datetime obj

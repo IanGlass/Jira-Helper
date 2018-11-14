@@ -45,10 +45,13 @@ class DB():
             in_progress_status TEXT UNIQUE,
             dev_status TEXT UNIQUE,
             design_status TEXT UNIQUE,
-            test_status TEXT UNIQUE)''')
+            test_status TEXT UNIQUE,
+            black_alert FLOAT UNIQUE,
+            red_alert FLOAT UNIQUE,
+            melt_down FLOAT UNIQUE)''')
 
         # Fetch whats currently in DB and add to form on startup, all pages will use these vars
-        self.settings = dict(jira_url=0, username=0, api_key=0, support_status=0, customer_status=0, in_progress_status=0, dev_status=0, design_status=0, test_status=0)
+        self.settings = dict(jira_url='', username='', api_key='', support_status='', customer_status='', in_progress_status='', dev_status='', design_status='', test_status='', black_alert=60 * 60 * 24 * 2, red_alert=60 * 60 * 24 * 7, melt_down=60 * 60 * 24 * 14)
         self.fetch_settings()
 
     def save_ticket_history(self, support, customer, in_progress, dev, design, test):
@@ -67,10 +70,10 @@ class DB():
         # Delete everything in the table first
         self.cur.execute('delete from settings')
         # Add updated values to the table
-        self.cur.execute('insert into settings (jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (self.settings.get('jira_url'), self.settings.get('username'), self.settings.get('api_key'), self.settings.get('support_status'), self.settings.get('customer_status'), self.settings.get('in_progress_status'), self.settings.get('dev_status'), self.settings.get('design_status'), self.settings.get('test_status')))
+        self.cur.execute('insert into settings (jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status, black_alert, red_alert, melt_down) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', (self.settings['jira_url'], self.settings['username'], self.settings['api_key'], self.settings['support_status'], self.settings['customer_status'], self.settings['in_progress_status'], self.settings['dev_status'], self.settings['design_status'], self.settings['test_status'], self.settings['black_alert'], self.settings['red_alert'], self.settings['melt_down']))
 
     def fetch_settings(self):  # Populates global settings dictionary from db
-        self.cur.execute('select jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status from settings limit 1')
+        self.cur.execute('select jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status, black_alert, red_alert, melt_down from settings limit 1')
         ret = self.cur.fetchall()
         try:
             self.settings = {
@@ -82,7 +85,10 @@ class DB():
                 "in_progress_status": ret[0][5],
                 "dev_status": ret[0][6],
                 "design_status": ret[0][7],
-                "test_status": ret[0][8]
+                "test_status": ret[0][8],
+                "black_alert": ret[0][9],
+                "red_alert": ret[0][10],
+                "melt_down": ret[0][11]
             }
         except:
             print("No saved settings")

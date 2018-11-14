@@ -14,27 +14,8 @@ import threading
 
 from database import database
 
-SUPPORT_TICKET_STATUS = "waiting for support"
-CUSTOMER_TICKET_STATUS = "waiting for customer"
-IN_PROGRESS_TICKET_STATUS = "in progress"
-DEV_TICKET_STATUS = "dev"
-DESIGN_TICKET_STATUS = "design"
-TEST_TICKET_STATUS = "test"
-# Format ticket status' to UNIX compatible directory path used by JIRA API
-SUPPORT_TICKET_STATUS = SUPPORT_TICKET_STATUS.replace(" ", "\ ")
-CUSTOMER_TICKET_STATUS = CUSTOMER_TICKET_STATUS.replace(" ", "\ ")
-IN_PROGRESS_TICKET_STATUS = IN_PROGRESS_TICKET_STATUS.replace(" ", "\ ")
-DEV_TICKET_STATUS = DEV_TICKET_STATUS.replace(" ", "\ ")
-DESIGN_TICKET_STATUS = DESIGN_TICKET_STATUS.replace(" ", "\ ")
-TEST_TICKET_STATUS = TEST_TICKET_STATUS.replace(" ", "\ ")
-
 FONT = "Times"  # Font used to display text
 FONT_SIZE = 12
-
-# TODO make these defined from config page in db
-BLACK_ALERT_DELAY = 60 * 60 * 24 * 2  # (seconds) displays ticket with 'Last Updated' older than this in black
-RED_ALERT_DELAY = 60 * 60 * 24 * 7  # (seconds) tickets with 'Last Updated' older than this are flashed red
-MELT_DOWN_DELAY = 60 * 60 * 24 * 14  # (seconds) tickets with 'Last Updated' older than this are solid red
 
 BOARD_SIZE = 25
 
@@ -96,13 +77,13 @@ class TicketBoard(QtWidgets.QMainWindow):
         # Pre-populate ticket list so boards do not stay empty until fetch ticket timeout
         try:
             # Create a JIRA object using netrc credentials
-            jira = JIRA(basic_auth=(database.settings.get('username'), database.settings.get('api_key')), options={'server': database.settings.get('jira_url')})
-            self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
-            self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
-            self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
-            self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
-            self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
-            self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+            jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
+            self.support_tickets = jira.search_issues('status=' + database.settings['support_status'].replace(" ", "\ "), maxResults=200)
+            self.customer_tickets = jira.search_issues('status=' + database.settings['customer_status'].replace(" ", "\ "), maxResults=200)
+            self.in_progress_tickets = jira.search_issues('status=' + database.settings['in_progress_status'].replace(" ", "\ "), maxResults=200)
+            self.dev_tickets = jira.search_issues('status=' + database.settings['dev_status'].replace(" ", "\ ") + ' OR status=new', maxResults=200)
+            self.design_tickets = jira.search_issues('status=' + database.settings['design_status'].replace(" ", "\ "), maxResults=200)
+            self.test_tickets = jira.search_issues('status=' + database.settings['test_status'].replace(" ", "\ "), maxResults=200)
         except:
             print("Invalid credentials")
 
@@ -136,13 +117,13 @@ class TicketBoard(QtWidgets.QMainWindow):
     def fetch_tickets(self):  # Thread for grabbing all tickets used by program
         try:
             # Create a JIRA object using netrc credentials
-            jira = JIRA(basic_auth=(database.settings.get('username'), database.settings.get('api_key')), options={'server': database.settings.get('jira_url')})
-            self.support_tickets = jira.search_issues('status=' + SUPPORT_TICKET_STATUS, maxResults=200)
-            self.customer_tickets = jira.search_issues('status=' + CUSTOMER_TICKET_STATUS, maxResults=200)
-            self.in_progress_tickets = jira.search_issues('status=' + IN_PROGRESS_TICKET_STATUS, maxResults=200)
-            self.dev_tickets = jira.search_issues('status=' + DEV_TICKET_STATUS + ' OR status=new', maxResults=200)
-            self.design_tickets = jira.search_issues('status=' + DESIGN_TICKET_STATUS, maxResults=200)
-            self.test_tickets = jira.search_issues('status=' + TEST_TICKET_STATUS, maxResults=200)
+            jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
+            self.support_tickets = jira.search_issues('status=' + database.settings['support_status'].replace(" ", "\ "), maxResults=200)
+            self.customer_tickets = jira.search_issues('status=' + database.settings['customer_status'].replace(" ", "\ "), maxResults=200)
+            self.in_progress_tickets = jira.search_issues('status=' + database.settings['in_progress_status'].replace(" ", "\ "), maxResults=200)
+            self.dev_tickets = jira.search_issues('status=' + database.settings['dev_status'].replace(" ", "\ ") + ' OR status=new', maxResults=200)
+            self.design_tickets = jira.search_issues('status=' + database.settings['design_status'].replace(" ", "\ "), maxResults=200)
+            self.test_tickets = jira.search_issues('status=' + database.settings['test_status'].replace(" ", "\ "), maxResults=200)
         except:
             print("Invalid credentials")
 
@@ -178,14 +159,14 @@ class TicketBoard(QtWidgets.QMainWindow):
                 except:  # Grab last dictionary in completedCycles array instead, is always an array
                     open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles']) - 1]['elapsedTime']['millis'] / 1000))
 
-                if (last_updated > BLACK_ALERT_DELAY and count <= BOARD_SIZE + 1):  # Only display if board is not full
-                    if (last_updated > MELT_DOWN_DELAY):  # Things are serious!
+                if (last_updated > database.settings['black_alert'] and count <= BOARD_SIZE + 1):  # Only display if board is not full
+                    if (last_updated > database.settings['melt_down']):  # Things are serious!
                         self.col_key[count].setStyleSheet('color: red')
                         self.col_summary[count].setStyleSheet('color: red')
                         self.col_assigned[count].setStyleSheet('color: red')
                         self.col_last_updated[count].setStyleSheet('color: red')
                         self.col_sla[count].setStyleSheet('color: red')
-                    elif (last_updated > RED_ALERT_DELAY):  # Things are not so Ok
+                    elif (last_updated > database.settings['red_alert']):  # Things are not so Ok
                         if (self.red_phase):
                             self.col_key[count].setStyleSheet('color: red')
                             self.col_summary[count].setStyleSheet('color: red')

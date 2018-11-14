@@ -10,6 +10,8 @@ from matplotlib.figure import Figure
 from dateutil import tz   # Used to convert local-UTC
 from datetime import datetime
 
+from jira import JIRA
+
 import threading
 
 from database import database
@@ -90,14 +92,48 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.in_progress_history = list()
         self.customer_history = list()
 
+        try:
+            # Create a JIRA object using netrc credentials
+            jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
+            self.support_tickets = jira.search_issues('status=' + database.settings['support_status'].replace(" ", "\ "), maxResults=200)
+            self.customer_tickets = jira.search_issues('status=' + database.settings['customer_status'].replace(" ", "\ "), maxResults=200)
+            self.in_progress_tickets = jira.search_issues('status=' + database.settings['in_progress_status'].replace(" ", "\ "), maxResults=200)
+            self.dev_tickets = jira.search_issues('status=' + database.settings['dev_status'].replace(" ", "\ ") + ' OR status=new', maxResults=200)
+            self.design_tickets = jira.search_issues('status=' + database.settings['design_status'].replace(" ", "\ "), maxResults=200)
+            self.test_tickets = jira.search_issues('status=' + database.settings['test_status'].replace(" ", "\ "), maxResults=200)
+        except:
+            print("Invalid credentials")
+
         # Timer used to update the analytics page
         self.update_analytics_timer = QtCore.QTimer(self)
         self.update_analytics_timer.timeout.connect(self.update_analytics_timeout)
         self.update_analytics_timer.start(1000)  # Update every second
 
+        # Timer fetch tickets from JIRA server
+        self.fetch_tickets_timer = QtCore.QTimer(self)
+        self.fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
+        self.fetch_tickets_timer.start(2000)  # Fetch tickets every 2 seconds
+
     def update_analytics_timeout(self):
         self.update_analytics_thread = threading.Thread(target=self.update_analytics)  # Load thread into obj
         self.update_analytics_thread.start()  # Start thread
+
+    def fetch_tickets_timeout(self):
+        self.fetch_tickets_thread = threading.Thread(target=self.fetch_tickets)  # Load thread into obj
+        self.fetch_tickets_thread.start()  # Start thread
+
+    def fetch_tickets(self):  # Thread for grabbing all tickets used by program
+        try:
+            # Create a JIRA object using netrc credentials
+            jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
+            self.support_tickets = jira.search_issues('status=' + database.settings['support_status'].replace(" ", "\ "), maxResults=200)
+            self.customer_tickets = jira.search_issues('status=' + database.settings['customer_status'].replace(" ", "\ "), maxResults=200)
+            self.in_progress_tickets = jira.search_issues('status=' + database.settings['in_progress_status'].replace(" ", "\ "), maxResults=200)
+            self.dev_tickets = jira.search_issues('status=' + database.settings['dev_status'].replace(" ", "\ ") + ' OR status=new', maxResults=200)
+            self.design_tickets = jira.search_issues('status=' + database.settings['design_status'].replace(" ", "\ "), maxResults=200)
+            self.test_tickets = jira.search_issues('status=' + database.settings['test_status'].replace(" ", "\ "), maxResults=200)
+        except:
+            print("Invalid credentials")
 
     def update_analytics(self):
         self.ticket_history = database.fetch_ticket_history()
@@ -120,12 +156,12 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
             self.in_progress_history.append(self.ticket_history[i][2])
             self.customer_history.append(self.ticket_history[i][3])
 
-        self.col_support[1].setText(str(self.ticket_history[len(self.ticket_history) - 1][1]))
-        self.col_customer[1].setText(str(self.ticket_history[len(self.ticket_history) - 1][2]))
-        self.col_in_progress[1].setText(str(self.ticket_history[len(self.ticket_history) - 1][3]))
-        self.col_dev[1].setText(str(self.ticket_history[len(self.ticket_history) - 1][4]))
-        self.col_design[1].setText(str(self.ticket_history[len(self.ticket_history) - 1][5]))
-        self.col_test[1].setText(str(self.ticket_history[len(self.ticket_history) - 1][6]))
+        self.col_support[1].setText(str(len(self.support_tickets)))
+        self.col_customer[1].setText(str(len(self.customer_tickets)))
+        self.col_in_progress[1].setText(str(len(self.in_progress_tickets)))
+        self.col_dev[1].setText(str(len(self.dev_tickets)))
+        self.col_design[1].setText(str(len(self.design_tickets)))
+        self.col_test[1].setText(str(len(self.test_tickets)))
 
         self.ax.clear()
         self.ax.plot(self.date_history, self.support_history, 'r-', label='waiting for support')
