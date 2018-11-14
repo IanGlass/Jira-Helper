@@ -1,4 +1,4 @@
-
+# Creates an object containing all the methods used to interact with the database. Also contains the locally cached variables used by the program
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT

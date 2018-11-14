@@ -1,9 +1,4 @@
-# Module creates a Qt table to display overdue issues as either older than:
-# 2 days - displayed in black text
-# 5 days - displayed as flashing red text
-# 10 days - displayed as solid red text
-# Up to 200 tickets are fetched using a thread (prevent locking updating table)
-# This project follows the PEP-8 style guides
+# Creates the main window and top row tool panel containing the 'settings' and 'clean queue' button, time and date. Also performs waiting on customer queue cleaning through a background thread which is toggled using the 'clean queue' button
 
 import sys
 from PyQt5 import QtCore, QtWidgets, QtGui
@@ -30,8 +25,8 @@ QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older 
 # this are thrown back into waiting on support with (follow up with client) text added to summary
 
 # TODO
-# Place check_queue into own class
-# Silence waiting for customer ticket updates so last_updated is not affected
+# Place check_queue into own class?
+# Silence waiting for customer ticket updates so last_updated is not affected, if possible
 # Remove update to customer ticket summary and write an internal comment instead
 # Create gui constructor methods for each class
 # Remove self. where its not needed

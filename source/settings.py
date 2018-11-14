@@ -1,3 +1,5 @@
+# Creates a child widget for the main window, which is shown when 'settings' button is pushed. Grabs the cached variables from database and displays them. Also pushes the user updated variables to cache which is then saved to database
+
 import sys
 from PyQt5 import QtCore, QtWidgets, QtGui
 # Used to covert and import datetime
