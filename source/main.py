@@ -65,14 +65,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.menu_layout.addWidget(self.date)
         self.menu_layout.addWidget(self.time)
 
-        try:  # This will fail if an arg is not supplied
-            if sys.argv[1] == "cleanup":  # If cleanup specified in bash, this is the second arg of call to program
-                # Timer used to fetch the waiting on customer queue and throw back into
-                self.clean_up_timer = QtCore.QTimer(self)
-                self.clean_up_timer.timeout.connect(self.clean_up_timeout)
-                self.clean_up_timer.start(1000)  # Check every 10 seconds
-        except:
-            print("Not running clean up")
+        self.clean_queue_button = QtWidgets.QPushButton()
+        self.clean_queue_button.setText("Clean Queue")
+        self.clean_queue_button.setCheckable(True)
+        self.menu_layout.addWidget(self.clean_queue_button)
+
+        # Timer used to fetch the waiting on customer queue and throw back into
+        self.clean_queue_timer = QtCore.QTimer(self)
+        self.clean_queue_timer.timeout.connect(self.clean_queue_timeout)
+        self.clean_queue_timer.start(60 * 1000)  # Clean every minute
 
         # Timer used to transition the page
         self.transition_page_timer = QtCore.QTimer(self)
@@ -101,12 +102,13 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.window.setCurrentIndex(0)
 
-    def clean_up_timeout(self):
-        # Load thread into obj
-        self.clean_up_thread = threading.Thread(target=self.clean_up)
-        self.clean_up_thread.start()  # Start thread
+    def clean_queue_timeout(self):
+        if self.clean_queue_button.isChecked():
+            # Load thread into obj
+            self.clean_queue_thread = threading.Thread(target=self.clean_queue)
+            self.clean_queue_thread.start()  # Start thread
 
-    def clean_up(self):
+    def clean_queue(self):
         # Try to get a transition key if there are any tickets in waiting for customer
         try:
             jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
