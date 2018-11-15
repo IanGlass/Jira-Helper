@@ -45,6 +45,6 @@ timedate is stored in UTC and converted to local in python script
 
 Analytics board will take up to 5 mins to start populating after correct credentials are entered
  
-
+Postgresql will need to be installed manually for this module to work
 
 
