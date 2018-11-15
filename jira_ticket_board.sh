@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#Install psql in linux
-sudo apt-get install postgresql
-#Install python in linux
-
 #Install latest version of pip package manager
 python -m pip install --upgrade pip
 
