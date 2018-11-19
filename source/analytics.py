@@ -46,7 +46,7 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
         self.col_test = list()
 
         self.fnt = QtGui.QFont(FONT, FONT_SIZE)
-        for i in range(0, 10):
+        for i in range(0, 10):  # TODO not a great way to space between graph and cols
             self.col_support.append(QtWidgets.QLabel())
             self.col_support[i].setFont(self.fnt)
             self.analytics_board_layout.addWidget(self.col_support[i], i, 0)
@@ -156,14 +156,20 @@ class AnalyticsBoard(QtWidgets.QMainWindow):
             self.in_progress_history.append(self.ticket_history[i][2])
             self.customer_history.append(self.ticket_history[i][3])
 
-        self.col_support[1].setText(str(len(self.support_tickets)))
-        self.col_customer[1].setText(str(len(self.customer_tickets)))
-        self.col_in_progress[1].setText(str(len(self.in_progress_tickets)))
-        self.col_dev[1].setText(str(len(self.dev_tickets)))
-        self.col_design[1].setText(str(len(self.design_tickets)))
-        self.col_test[1].setText(str(len(self.test_tickets)))
+        try:
+            self.col_support[1].setText(str(len(self.support_tickets)))
+            self.col_customer[1].setText(str(len(self.customer_tickets)))
+            self.col_in_progress[1].setText(str(len(self.in_progress_tickets)))
+            self.col_dev[1].setText(str(len(self.dev_tickets)))
+            self.col_design[1].setText(str(len(self.design_tickets)))
+            self.col_test[1].setText(str(len(self.test_tickets)))
+
+        except:
+            print('Missing queue status configuration')
 
         self.ax.clear()
+        print(self.date_history)
+        print(self.support_history)
         self.ax.plot(self.date_history, self.support_history, 'r-', label='waiting for support')
         self.ax.plot(self.date_history, self.customer_history, 'b-', label='waiting for customer')
         self.ax.plot(self.date_history, self.in_progress_history, 'g-', label='in progress')
