@@ -1,9 +1,8 @@
 # Raspi-Jira-Display-Board
 
-
+SHELL SCRIPT CURRENTLY NOT WORKING
 
 Review code naming convention
-
 
 Provides a dashboard to display overdue tickets, with overdue tickets displayed in black text, older tickets displayed as flashing red and oldest displayed as solid red text
 
