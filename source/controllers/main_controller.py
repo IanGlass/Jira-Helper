@@ -6,16 +6,24 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import QDate, QTime, Qt
 
 from jira import JIRA
-import netrc
 import threading
 from datetime import datetime
 # Used to truncate and convert string to datetime Obj
 from dateutil import parser
 
-from ticket_board import TicketBoard
-from analytics import AnalyticsBoard
-from settings import SettingsBoard
-from database import database
+import os
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path=dir_path[:-12]
+sys.path.append(dir_path + '\\models')
+sys.path.append(dir_path + '\\views')
+sys.path.append(dir_path + '\\controllers')
+
+
+app = QtWidgets.QApplication(sys.argv)
+
+from main_view import main_view
+from database_model import database_model
 
 AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
 
@@ -32,38 +40,12 @@ QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older 
 # Remove self. where its not needed
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainController(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.window = QtWidgets.QStackedWidget()  # Create the main widget for the page
-
-        self.main_window_widget = QtWidgets.QWidget()
-        self.main_window_layout = QtWidgets.QGridLayout()
-        self.main_window_widget.setLayout(self.main_window_layout)
-        self.menu_widget = QtWidgets.QWidget()
-        self.menu_layout = QtWidgets.QHBoxLayout()
-        self.menu_widget.setLayout(self.menu_layout)
-        self.main_window_layout.addWidget(self.menu_widget, 0, 0)
-        self.main_window_layout.addWidget(self.window, 1, 0)
-        self.setCentralWidget(self.main_window_widget)
-
-        self.settings_submit_button = QtWidgets.QPushButton()
-        self.settings_submit_button.setText("Settings")
-        self.settings_submit_button.clicked.connect(self.push_settings_button)
-        self.menu_layout.addWidget(self.settings_submit_button)
-
-        self.date = QtWidgets.QLabel()
-        self.date.setStyleSheet('font-size: 40px')
-        self.time = QtWidgets.QLabel()
-        self.time.setStyleSheet('font-size: 40px')
-        self.menu_layout.addWidget(self.date)
-        self.menu_layout.addWidget(self.time)
-
-        self.clean_queue_button = QtWidgets.QPushButton()
-        self.clean_queue_button.setText("Clean Queue")
-        self.clean_queue_button.setCheckable(True)
-        self.menu_layout.addWidget(self.clean_queue_button)
+        # Attach controller function to submit button view
+        main_view.settings_submit_button.clicked.connect(self.push_settings_button)
 
         # Timer used to fetch the waiting on customer queue and throw back into
         self.clean_queue_timer = QtCore.QTimer(self)
@@ -72,33 +54,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Timer used to transition the page
         self.transition_page_timer = QtCore.QTimer(self)
-        self.transition_page_timer.timeout.connect(self.transition_page_timeout)
+        self.transition_page_timer.timeout.connect(main_view.transition_page)
         self.transition_page_timer.start(TRANSITION_PERIOD)
 
         # Timer fetch tickets from JIRA server
         self.update_datetime_timer = QtCore.QTimer(self)
-        self.update_datetime_timer.timeout.connect(self.update_datetime_timeout)
+        self.update_datetime_timer.timeout.connect(main_view.update_datetime)
         self.update_datetime_timer.start(1000)  # update every 1 second
 
-    def update_datetime_timeout(self):
-        self.update_datetime_thread = threading.Thread(target=self.update_datetime)  # Load thread into obj
-        self.update_datetime_thread.start()  # Start thread
-
-    def update_datetime(self):
-        Qdate = QDate.currentDate()
-        Qtime = QTime.currentTime()
-        self.date.setText(Qdate.toString(Qt.DefaultLocaleLongDate))
-        self.time.setText(Qtime.toString(Qt.DefaultLocaleLongDate))
-
-    def transition_page_timeout(self):
-        index_Id = self.window.currentIndex()
-        if index_Id < self.window.count() - 1:
-            self.window.setCurrentIndex(index_Id + 1)
-        else:
-            self.window.setCurrentIndex(0)
-
     def clean_queue_timeout(self):
-        if self.clean_queue_button.isChecked():
+        if main_view.clean_queue_button.isChecked():
             # Load thread into obj
             self.clean_queue_thread = threading.Thread(target=self.clean_queue)
             self.clean_queue_thread.start()  # Start thread
@@ -135,40 +100,39 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def push_settings_button(self):
         self.transition_page_timer.stop()
-        self.window.addWidget(settings_board.settings_board_widget)
-        self.window.setCurrentWidget(settings_board.settings_board_widget)
+        main_view.window.addWidget(settings_board_view.settings_board_widget)
+        main_view.window.setCurrentWidget(settings_board_view.settings_board_widget)
 
         # Load values
-        settings_board.load_from_cache()
+        settings_board_view.load_from_cache()
 
         # Remove all currently connected functions
-        self.settings_submit_button.disconnect()
+        main_view.settings_submit_button.disconnect()
         # Change button submit to save current results
-        self.settings_submit_button.clicked.connect(self.push_submit_button)
-        self.settings_submit_button.setText("Submit")
+        main_view.settings_submit_button.clicked.connect(main_controller.push_submit_button)
+        main_view.settings_submit_button.setText("Submit")
 
     def push_submit_button(self):
         self.transition_page_timer.start()
-        self.window.removeWidget(settings_board.settings_board_widget)  # Remove settings board so it doesn't show in transition
-        self.window.setCurrentWidget(ticket_board.ticket_board_widget)  # Don't wait for transition to change back to another page
+        main_view.window.removeWidget(settings_board_view.settings_board_widget)  # Remove settings board so it doesn't show in transition
+        main_view.window.setCurrentWidget(ticket_board_view.ticket_board_widget)  # Don't wait for transition to change back to another page
 
         # Save values to cache and db
-        settings_board.save_to_cache()
+        settings_board_view.save_to_cache()
 
-        self.settings_submit_button.disconnect()
-        self.settings_submit_button.clicked.connect(self.push_settings_button)
-        self.settings_submit_button.setText("Settings")
+        main_view.settings_submit_button.disconnect()
+        main_view.settings_submit_button.clicked.connect(main_controller.push_settings_button)
+        main_view.settings_submit_button.setText("Settings")
 
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    main_window = MainWindow()
-    main_window.showMaximized()
-    main_window.setWindowTitle('Jira Helper')
-    ticket_board = TicketBoard()
-    main_window.window.addWidget(ticket_board.ticket_board_widget)  # Add the ticket board widget/layout to the main window widget
-    analytics_board = AnalyticsBoard()
-    main_window.window.addWidget(analytics_board.analytics_board_widget)  # Add the analytics board widget/layout to the main window widget
-    settings_board = SettingsBoard()
-    main_window.show()
+    main_controller = MainController()
+    main_view.showMaximized()
+    main_view.setWindowTitle('Jira Helper')
+    # Can't import module until instantiation of main_view
+    import ticket_board_controller
+    from ticket_board_view import ticket_board_view
+    import analytics_board_controller
+    from settings_board_view import settings_board_view
+    main_view.show()
     sys.exit(app.exec_())  # Launch event loop

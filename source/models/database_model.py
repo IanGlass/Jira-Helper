@@ -94,5 +94,5 @@ class DB():
             print("No saved settings")
 
 
-if __name__ == 'database':
-    database = DB()
+if __name__ == 'database_model':
+    database_model = DB()
