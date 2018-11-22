@@ -42,17 +42,21 @@ class MainView(QtWidgets.QMainWindow):
         self.main_window_layout.addWidget(self.window, 1, 0)
         self.setCentralWidget(self.main_window_widget)
 
+        # Create a settings button
         self.settings_submit_button = QtWidgets.QPushButton()
         self.settings_submit_button.setText("Settings")
         self.menu_layout.addWidget(self.settings_submit_button)
 
+        # Create date time
+        datetime_font = QtGui.QFont("Times", 30)
         self.date = QtWidgets.QLabel()
-        self.date.setStyleSheet('font-size: 40px')
+        self.date.setFont(datetime_font)
         self.time = QtWidgets.QLabel()
-        self.time.setStyleSheet('font-size: 40px')
+        self.time.setFont(datetime_font)
         self.menu_layout.addWidget(self.date)
         self.menu_layout.addWidget(self.time)
 
+        # Create a clean queue button
         self.clean_queue_button = QtWidgets.QPushButton()
         self.clean_queue_button.setText("Clean Queue")
         self.clean_queue_button.setCheckable(True)
@@ -70,6 +74,7 @@ class MainView(QtWidgets.QMainWindow):
             self.window.setCurrentIndex(index_Id + 1)
         else:
             self.window.setCurrentIndex(0)
+
 
 if __name__ == 'main_view':
     print('Instantiating main_view')

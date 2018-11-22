@@ -17,7 +17,6 @@ from jira_model import jira_model
 
 BOARD_SIZE = 25
 
-# TODO use setStyleSheet() instead of setFont
 
 class TicketBoardView(QtWidgets.QMainWindow):
 
@@ -38,6 +37,7 @@ class TicketBoardView(QtWidgets.QMainWindow):
         # Create column headers
         header_font = QtGui.QFont("Times", 12)
         header_font.setBold(True)
+
         key_header = QtWidgets.QLabel()
         key_header.setFont(header_font)
         key_header.setText("Ticket Number")
@@ -70,26 +70,26 @@ class TicketBoardView(QtWidgets.QMainWindow):
         self.col_last_updated = list()
         self.col_sla = list()
         text_font = QtGui.QFont("Times", 12)
-        for i in range(0, BOARD_SIZE):  
+        for i in range(0, BOARD_SIZE):
             self.col_key.append(QtWidgets.QLabel())
             self.col_key[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_key[i], i+2, 0)
+            self.ticket_board_layout.addWidget(self.col_key[i], i + 2, 0)
 
             self.col_summary.append(QtWidgets.QLabel())
             self.col_summary[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_summary[i], i+2, 1)
+            self.ticket_board_layout.addWidget(self.col_summary[i], i + 2, 1)
 
             self.col_assigned.append(QtWidgets.QLabel())
             self.col_assigned[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_assigned[i], i+2, 2)
+            self.ticket_board_layout.addWidget(self.col_assigned[i], i + 2, 2)
 
             self.col_last_updated.append(QtWidgets.QLabel())
             self.col_last_updated[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_last_updated[i], i+2, 3)
+            self.ticket_board_layout.addWidget(self.col_last_updated[i], i + 2, 3)
 
             self.col_sla.append(QtWidgets.QLabel())
             self.col_sla[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_sla[i], i+2, 4)
+            self.ticket_board_layout.addWidget(self.col_sla[i], i + 2, 4)
 
         self.red_phase = False  # Used to flash rows if red alert
 
@@ -162,4 +162,4 @@ class TicketBoardView(QtWidgets.QMainWindow):
 if __name__ == 'ticket_board_view':
     ticket_board_view = TicketBoardView()
     # Add the ticket board widget/layout to the main window widget
-    main_view.window.addWidget(ticket_board_view.ticket_board_widget) 
+    main_view.window.addWidget(ticket_board_view.ticket_board_widget)

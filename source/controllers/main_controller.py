@@ -14,11 +14,10 @@ from dateutil import parser
 import os
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path=dir_path[:-12]
+dir_path = dir_path[:-12]
 sys.path.append(dir_path + '\\models')
 sys.path.append(dir_path + '\\views')
 sys.path.append(dir_path + '\\controllers')
-
 
 app = QtWidgets.QApplication(sys.argv)
 
@@ -116,7 +115,6 @@ class MainController(QtWidgets.QMainWindow):
     def push_submit_button(self):
         self.transition_page_timer.start()
         main_view.window.removeWidget(settings_board_view.settings_board_widget)  # Remove settings board so it doesn't show in transition
-        #main_view.window.setCurrentWidget(ticket_board_view.ticket_board_widget)  # Don't wait for transition to change back to another page
 
         # Save values to cache and db
         settings_board_view.save_to_cache()
@@ -133,7 +131,7 @@ if __name__ == '__main__':
     import ticket_board_controller
     from ticket_board_view import ticket_board_view
     from analytics_board_controller import analytics_board_controller
-    # from build_board_controller import build_board_controller
+    from build_board_controller import build_board_controller
     from settings_board_view import settings_board_view
     main_view.showMaximized()
     sys.exit(app.exec_())  # Launch event loop

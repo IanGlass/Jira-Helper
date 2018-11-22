@@ -39,10 +39,11 @@ class AnalyticsBoardView(QtWidgets.QMainWindow):
         title.setFont(title_font)
         title.setText('Ticket Analytics')
         self.analytics_board_layout.addWidget(title, 0, 0, 1, 0, QtCore.Qt.AlignCenter)
-        
+
         # Create column headers
         header_font = QtGui.QFont("Times", 12)
         header_font.setBold(True)
+
         support_header = QtWidgets.QLabel()
         support_header.setFont(header_font)
         support_header.setText("# of support tickets")
@@ -73,7 +74,6 @@ class AnalyticsBoardView(QtWidgets.QMainWindow):
         test_header.setText("# of tickest in Test")
         self.analytics_board_layout.addWidget(test_header, 1, 5, QtCore.Qt.AlignCenter)
 
-
         self.col_support = list()
         self.col_customer = list()
         self.col_in_progress = list()
@@ -85,27 +85,27 @@ class AnalyticsBoardView(QtWidgets.QMainWindow):
         for i in range(0, 10):  # TODO not a great way to space between graph and cols
             self.col_support.append(QtWidgets.QLabel())
             self.col_support[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_support[i], i+1, 0, QtCore.Qt.AlignCenter)
+            self.analytics_board_layout.addWidget(self.col_support[i], i + 1, 0, QtCore.Qt.AlignCenter)
 
             self.col_customer.append(QtWidgets.QLabel())
             self.col_customer[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_customer[i], i+1, 1, QtCore.Qt.AlignCenter)
+            self.analytics_board_layout.addWidget(self.col_customer[i], i + 1, 1, QtCore.Qt.AlignCenter)
 
             self.col_in_progress.append(QtWidgets.QLabel())
             self.col_in_progress[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_in_progress[i], i+1, 2, QtCore.Qt.AlignCenter)
+            self.analytics_board_layout.addWidget(self.col_in_progress[i], i + 1, 2, QtCore.Qt.AlignCenter)
 
             self.col_dev.append(QtWidgets.QLabel())
             self.col_dev[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_dev[i], i+1, 3, QtCore.Qt.AlignCenter)
+            self.analytics_board_layout.addWidget(self.col_dev[i], i + 1, 3, QtCore.Qt.AlignCenter)
 
             self.col_design.append(QtWidgets.QLabel())
             self.col_design[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_design[i], i+1, 4, QtCore.Qt.AlignCenter)
+            self.analytics_board_layout.addWidget(self.col_design[i], i + 1, 4, QtCore.Qt.AlignCenter)
 
             self.col_test.append(QtWidgets.QLabel())
             self.col_test[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_test[i], i+1, 5, QtCore.Qt.AlignCenter)
+            self.analytics_board_layout.addWidget(self.col_test[i], i + 1, 5, QtCore.Qt.AlignCenter)
 
         # Create a graph
         self.figure = Figure(figsize=(7, 4), dpi=100)
@@ -166,4 +166,4 @@ if __name__ == 'analytics_board_view':
     print('Instantiating analytics_view')
     analytics_board_view = AnalyticsBoardView()
     # Add the analytics board widget/layout to the main window widget
-    main_view.window.addWidget(analytics_board_view.analytics_board_widget)  
+    main_view.window.addWidget(analytics_board_view.analytics_board_widget)

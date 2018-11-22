@@ -15,7 +15,6 @@ from jira_model import jira_model
 from ticket_board_view import ticket_board_view
 from database_model import database_model
 
-# TODO use setStyleSheet() instead of setFont
 
 class TicketBoardController(QtWidgets.QMainWindow):
 
@@ -25,7 +24,7 @@ class TicketBoardController(QtWidgets.QMainWindow):
         self.update_board_timer = QtCore.QTimer(self)
         self.update_board_timer.timeout.connect(ticket_board_view.update_board)
         self.update_board_timer.start(1000)
-    
-    
+
+
 if __name__ == 'ticket_board_controller':
     ticket_board_controller = TicketBoardController()
