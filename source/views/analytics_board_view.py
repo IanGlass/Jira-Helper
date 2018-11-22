@@ -61,17 +61,17 @@ class AnalyticsBoardView(QtWidgets.QMainWindow):
 
         dev_header = QtWidgets.QLabel()
         dev_header.setFont(header_font)
-        dev_header.setText("# of tickest in Dev")
+        dev_header.setText("# of tickets in Dev")
         self.analytics_board_layout.addWidget(dev_header, 1, 3, QtCore.Qt.AlignCenter)
 
         design_header = QtWidgets.QLabel()
         design_header.setFont(header_font)
-        design_header.setText("# of tickest in Design")
+        design_header.setText("# of tickets in Design")
         self.analytics_board_layout.addWidget(design_header, 1, 4, QtCore.Qt.AlignCenter)
 
         test_header = QtWidgets.QLabel()
         test_header.setFont(header_font)
-        test_header.setText("# of tickest in Test")
+        test_header.setText("# of tickets in Test")
         self.analytics_board_layout.addWidget(test_header, 1, 5, QtCore.Qt.AlignCenter)
 
         self.col_support = list()
