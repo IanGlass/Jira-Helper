@@ -24,6 +24,7 @@ app = QtWidgets.QApplication(sys.argv)
 
 from main_view import main_view
 from database_model import database_model
+from jira_model import jira_model
 
 AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
 
@@ -57,7 +58,7 @@ class MainController(QtWidgets.QMainWindow):
         self.transition_page_timer.timeout.connect(main_view.transition_page)
         self.transition_page_timer.start(TRANSITION_PERIOD)
 
-        # Timer fetch tickets from JIRA server
+        # Timer update board
         self.update_datetime_timer = QtCore.QTimer(self)
         self.update_datetime_timer.timeout.connect(main_view.update_datetime)
         self.update_datetime_timer.start(1000)  # update every 1 second
@@ -115,7 +116,7 @@ class MainController(QtWidgets.QMainWindow):
     def push_submit_button(self):
         self.transition_page_timer.start()
         main_view.window.removeWidget(settings_board_view.settings_board_widget)  # Remove settings board so it doesn't show in transition
-        main_view.window.setCurrentWidget(ticket_board_view.ticket_board_widget)  # Don't wait for transition to change back to another page
+        #main_view.window.setCurrentWidget(ticket_board_view.ticket_board_widget)  # Don't wait for transition to change back to another page
 
         # Save values to cache and db
         settings_board_view.save_to_cache()
@@ -127,12 +128,12 @@ class MainController(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     main_controller = MainController()
-    main_view.showMaximized()
     main_view.setWindowTitle('Jira Helper')
     # Can't import module until instantiation of main_view
     import ticket_board_controller
     from ticket_board_view import ticket_board_view
-    import analytics_board_controller
+    from analytics_board_controller import analytics_board_controller
+    # from build_board_controller import build_board_controller
     from settings_board_view import settings_board_view
-    main_view.show()
+    main_view.showMaximized()
     sys.exit(app.exec_())  # Launch event loop

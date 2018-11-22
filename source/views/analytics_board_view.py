@@ -32,13 +32,47 @@ class AnalyticsBoardView(QtWidgets.QMainWindow):
         self.analytics_board_layout = QtWidgets.QGridLayout()  # Layout for analytics board
         self.analytics_board_widget.setLayout(self.analytics_board_layout)
 
-        self.figure = Figure(figsize=(7, 4), dpi=100)
-        self.canvas = FigureCanvas(self.figure)
-        self.analytics_board_layout.addWidget(self.canvas, 3, 0, -1, 6)  # Add plot to analytics board
-        self.ax = self.figure.add_subplot(111)
-        self.ax.set_xlabel('date')
-        self.ax.set_ylabel('# of tickets')
-        self.figure.patch.set_facecolor([240 / 255, 240 / 255, 240 / 255, 1])
+        # Create a page title
+        title = QtWidgets.QLabel()
+        title_font = QtGui.QFont("Times", 20)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setText('Ticket Analytics')
+        self.analytics_board_layout.addWidget(title, 0, 0, 1, 0, QtCore.Qt.AlignCenter)
+        
+        # Create column headers
+        header_font = QtGui.QFont("Times", 12)
+        header_font.setBold(True)
+        support_header = QtWidgets.QLabel()
+        support_header.setFont(header_font)
+        support_header.setText("# of support tickets")
+        self.analytics_board_layout.addWidget(support_header, 1, 0, QtCore.Qt.AlignCenter)
+
+        customer_header = QtWidgets.QLabel()
+        customer_header.setFont(header_font)
+        customer_header.setText("# of support tickets")
+        self.analytics_board_layout.addWidget(customer_header, 1, 1, QtCore.Qt.AlignCenter)
+
+        in_progress_header = QtWidgets.QLabel()
+        in_progress_header.setFont(header_font)
+        in_progress_header.setText("# of tickets in Progress")
+        self.analytics_board_layout.addWidget(in_progress_header, 1, 2, QtCore.Qt.AlignCenter)
+
+        dev_header = QtWidgets.QLabel()
+        dev_header.setFont(header_font)
+        dev_header.setText("# of tickest in Dev")
+        self.analytics_board_layout.addWidget(dev_header, 1, 3, QtCore.Qt.AlignCenter)
+
+        design_header = QtWidgets.QLabel()
+        design_header.setFont(header_font)
+        design_header.setText("# of tickest in Design")
+        self.analytics_board_layout.addWidget(design_header, 1, 4, QtCore.Qt.AlignCenter)
+
+        test_header = QtWidgets.QLabel()
+        test_header.setFont(header_font)
+        test_header.setText("# of tickest in Test")
+        self.analytics_board_layout.addWidget(test_header, 1, 5, QtCore.Qt.AlignCenter)
+
 
         self.col_support = list()
         self.col_customer = list()
@@ -51,44 +85,38 @@ class AnalyticsBoardView(QtWidgets.QMainWindow):
         for i in range(0, 10):  # TODO not a great way to space between graph and cols
             self.col_support.append(QtWidgets.QLabel())
             self.col_support[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_support[i], i, 0)
+            self.analytics_board_layout.addWidget(self.col_support[i], i+1, 0, QtCore.Qt.AlignCenter)
 
             self.col_customer.append(QtWidgets.QLabel())
             self.col_customer[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_customer[i], i, 1)
+            self.analytics_board_layout.addWidget(self.col_customer[i], i+1, 1, QtCore.Qt.AlignCenter)
 
             self.col_in_progress.append(QtWidgets.QLabel())
             self.col_in_progress[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_in_progress[i], i, 2)
+            self.analytics_board_layout.addWidget(self.col_in_progress[i], i+1, 2, QtCore.Qt.AlignCenter)
 
             self.col_dev.append(QtWidgets.QLabel())
             self.col_dev[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_dev[i], i, 3)
+            self.analytics_board_layout.addWidget(self.col_dev[i], i+1, 3, QtCore.Qt.AlignCenter)
 
             self.col_design.append(QtWidgets.QLabel())
             self.col_design[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_design[i], i, 4)
+            self.analytics_board_layout.addWidget(self.col_design[i], i+1, 4, QtCore.Qt.AlignCenter)
 
             self.col_test.append(QtWidgets.QLabel())
             self.col_test[i].setFont(self.fnt)
-            self.analytics_board_layout.addWidget(self.col_test[i], i, 5)
+            self.analytics_board_layout.addWidget(self.col_test[i], i+1, 5, QtCore.Qt.AlignCenter)
 
-        # Fill column titles
-        self.fnt.setBold(True)
-        self.col_support[0].setFont(self.fnt)
-        self.col_support[0].setText("# of support tickets")
-        self.col_customer[0].setFont(self.fnt)
-        self.col_customer[0].setText("# of customer tickets")
-        self.col_in_progress[0].setFont(self.fnt)
-        self.col_in_progress[0].setText("# of tickets in Progress")
-        self.col_dev[0].setFont(self.fnt)
-        self.col_dev[0].setText("# of tickest in dev")
-        self.col_design[0].setFont(self.fnt)
-        self.col_design[0].setText("# of tickest in design")
-        self.col_test[0].setFont(self.fnt)
-        self.col_test[0].setText("# of tickest in test")
-        self.fnt.setBold(False)  # Reset font
+        # Create a graph
+        self.figure = Figure(figsize=(7, 4), dpi=100)
+        self.canvas = FigureCanvas(self.figure)
+        self.analytics_board_layout.addWidget(self.canvas, 3, 0, -1, 6)  # Add plot to analytics board
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_xlabel('date')
+        self.ax.set_ylabel('# of tickets')
+        self.figure.patch.set_facecolor([240 / 255, 240 / 255, 240 / 255, 1])
 
+        # Global vars
         self.date_history = list()
         self.support_history = list()
         self.in_progress_history = list()
