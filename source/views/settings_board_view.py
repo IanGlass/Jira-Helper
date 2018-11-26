@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QLineEdit, QFormLayout
 
 from database_model import database_model
 
-
 class SettingsBoardView(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -85,36 +84,6 @@ class SettingsBoardView(QMainWindow):
         self.melt_down_value.setText(str(database_model.settings['melt_down']))
         self.melt_down_label.setText("Age of solid red tickets (days), must be > flashing red tickets")
         settings_form.addRow(self.melt_down_label, self.melt_down_value)
-
-    def load_from_cache(self):
-        database_model.fetch_settings()
-        self.jira_url_value.setText(str(database_model.settings['jira_url']))
-        self.username_value.setText(str(database_model.settings['username']))
-        self.api_key_value.setText(str(database_model.settings['api_key']))
-        self.support_status_value.setText(str(database_model.settings['support_status']))
-        self.customer_status_value.setText(str(database_model.settings['customer_status']))
-        self.in_progress_status_value.setText(str(database_model.settings['in_progress_status']))
-        self.dev_status_value.setText(str(database_model.settings['dev_status']))
-        self.design_status_value.setText(str(database_model.settings['design_status']))
-        self.test_status_value.setText(str(database_model.settings['test_status']))
-        self.black_alert_value.setText(str(database_model.settings['black_alert'] / (60 * 60 * 24)))
-        self.red_alert_value.setText(str(database_model.settings['red_alert'] / (60 * 60 * 24)))
-        self.melt_down_value.setText(str(database_model.settings['melt_down'] / (60 * 60 * 24)))
-
-    def save_to_cache(self):
-        database_model.settings["jira_url"] = str(self.jira_url_value.text())
-        database_model.settings["username"] = str(self.username_value.text())
-        database_model.settings["api_key"] = str(self.api_key_value.text())
-        database_model.settings["support_status"] = str(self.support_status_value.text())
-        database_model.settings["customer_status"] = str(self.customer_status_value.text())
-        database_model.settings["in_progress_status"] = str(self.in_progress_status_value.text())
-        database_model.settings["dev_status"] = str(self.dev_status_value.text())
-        database_model.settings["design_status"] = str(self.design_status_value.text())
-        database_model.settings["test_status"] = str(self.test_status_value.text())
-        database_model.settings["black_alert"] = float(self.black_alert_value.text()) * (60 * 60 * 24)
-        database_model.settings["red_alert"] = float(self.red_alert_value.text()) * (60 * 60 * 24)
-        database_model.settings["melt_down"] = float(self.melt_down_value.text()) * (60 * 60 * 24)
-        database_model.save_settings()
 
 
 if __name__ == 'settings_board_view':

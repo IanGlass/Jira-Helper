@@ -1,6 +1,5 @@
 # Creates a QWidget containing a graph of ticket history in waiting on support, waiting on customer and in progress. Also displays the current number of tickets in waiting for support, waiting for customer, in progress, dev, design and test. Ticket history is grabbed from a local database using psycopg2
 
-# GUI
 import sys
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont

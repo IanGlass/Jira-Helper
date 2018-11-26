@@ -1,6 +1,5 @@
 # Creates a QWidget to display overdue tickets in the waiting for support queue. Tickets are fetched using a JIRA api and filtered for last_updated > overdue time. Module also saves the ticket history to the local db.
 
-# GUI
 import sys
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont

@@ -59,12 +59,14 @@ class MainView(QMainWindow):
         self.menu_layout.addWidget(self.clean_queue_button)
 
     def update_datetime(self):
+        '''Connected to a Qtimer to periodically update the date and time'''
         Qdate = QDate.currentDate()
         Qtime = QTime.currentTime()
         self.date.setText(Qdate.toString(Qt.DefaultLocaleLongDate))
         self.time.setText(Qtime.toString(Qt.DefaultLocaleLongDate))
 
     def transition_page(self):
+        '''Connected to a Qtimer to periodically transition through the widgets stacked on self.window'''
         index_Id = self.window.currentIndex()
         if index_Id < self.window.count() - 1:
             self.window.setCurrentIndex(index_Id + 1)
