@@ -22,18 +22,9 @@ from database_model import database_model
 from jira_model import jira_model
 
 AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
-
-# TODO make these defined from settings page in db
 TRANSITION_PERIOD = 10 * 1000  # (miliseconds) time between page swap
 QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older than
 # this are thrown back into waiting on support with (follow up with client) text added to summary
-
-# TODO
-# Place check_queue into own class?
-# Silence waiting for customer ticket updates so last_updated is not affected, if possible
-# Remove update to customer ticket summary and write an internal comment instead
-# Create gui constructor methods for each class
-# Remove self. where its not needed
 
 
 class MainController(QObject):

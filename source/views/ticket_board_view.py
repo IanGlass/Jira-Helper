@@ -91,13 +91,12 @@ class TicketBoardView(QWidget):
         self.red_phase = False  # Used to flash rows if red alert
 
     def clear_widgets(self):  # Ensures table is cleared if less than BOARD_SIZE issues are overdue
-        # TODO use .clear to clear widget lists
         for i in range(0, BOARD_SIZE):
-            self.col_key[i].setText("")
-            self.col_summary[i].setText("")
-            self.col_assigned[i].setText("")
-            self.col_last_updated[i].setText("")
-            self.col_sla[i].setText("")
+            self.col_key[i].clear()
+            self.col_summary[i].clear()
+            self.col_assigned[i].clear()
+            self.col_last_updated[i].clear()
+            self.col_sla[i].clear()
 
     def update_board(self):
         self.clear_widgets()

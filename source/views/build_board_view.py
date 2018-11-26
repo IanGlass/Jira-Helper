@@ -12,8 +12,6 @@ from jira_model import jira_model
 BOARD_SIZE = 20
 
 
-# TODO use setStyleSheet() instead of setFont
-
 class BuildBoardView(QWidget):
     def __init__(self):
         super().__init__()
