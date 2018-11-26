@@ -3,7 +3,7 @@
 import sys
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel, QProgressBar
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QProgressBar
 
 from database_model import database_model
 from main_view import main_view
@@ -14,13 +14,11 @@ BOARD_SIZE = 20
 
 # TODO use setStyleSheet() instead of setFont
 
-class BuildBoardView(QMainWindow):
-
+class BuildBoardView(QWidget):
     def __init__(self):
         super().__init__()
-        self.build_board_widget = QWidget()  # Create the widget to contain the build board layout
         self.build_board_layout = QGridLayout()  # Layout for build board
-        self.build_board_widget.setLayout(self.build_board_layout)
+        self.setLayout(self.build_board_layout)
 
         # Create a page title
         title = QLabel()
@@ -96,4 +94,4 @@ if __name__ == 'build_board_view':
     print('Instantiating build_board_view')
     build_board_view = BuildBoardView()
     # Add the ticket board widget/layout to the main window widget
-    main_view.window.addWidget(build_board_view.build_board_widget)
+    main_view.window.addWidget(build_board_view)

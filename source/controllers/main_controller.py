@@ -1,8 +1,8 @@
 # Creates the main window and top row tool panel containing the 'settings' and 'clean queue' button, time and date. Also performs waiting on customer queue cleaning through a background thread which is toggled using the 'clean queue' button
 
 import sys
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtCore import QTimer, QObject
+from PyQt5.QtWidgets import QApplication
 
 from jira import JIRA
 import threading
@@ -36,7 +36,7 @@ QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older 
 # Remove self. where its not needed
 
 
-class MainController(QMainWindow):
+class MainController(QObject):
     def __init__(self):
         super().__init__()
 
@@ -99,8 +99,8 @@ class MainController(QMainWindow):
     def push_settings_button(self):
         '''Push button function to stop page transitions, set the settings page as the active widget, load the cached settings retrieved from the db and change its own on push function'''
         self.transition_page_timer.stop()
-        main_view.window.addWidget(settings_board_view.settings_board_widget)
-        main_view.window.setCurrentWidget(settings_board_view.settings_board_widget)
+        main_view.window.addWidget(settings_board_view)
+        main_view.window.setCurrentWidget(settings_board_view)
 
         # Load values
         settings_board_controller.load_from_cache()
@@ -114,7 +114,7 @@ class MainController(QMainWindow):
     def push_submit_button(self):
         '''Push button function to trigger transitions again, remove the settings widget, save the settings to cache and db and change its own on push function'''
         self.transition_page_timer.start()
-        main_view.window.removeWidget(settings_board_view.settings_board_widget)  # Remove settings board so it doesn't show in transition
+        main_view.window.removeWidget(settings_board_view)  # Remove settings board so it doesn't show in transition
 
         # Save values to cache and db
         settings_board_controller.save_to_cache()

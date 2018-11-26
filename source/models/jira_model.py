@@ -1,12 +1,13 @@
 
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5.QtCore import QObject, QTimer
 import threading
 from jira import JIRA
+
 from database_model import database_model
 
 
-class JiraModel(QtWidgets.QMainWindow):
+class JiraModel(QObject):
     def __init__(self):
         super().__init__()
         self.support_tickets = list()
@@ -18,12 +19,12 @@ class JiraModel(QtWidgets.QMainWindow):
         self.build_tickets = list()
 
         # Timer to fetch tickets from JIRA server
-        fetch_tickets_timer = QtCore.QTimer(self)
+        fetch_tickets_timer = QTimer(self)
         fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
         fetch_tickets_timer.start(2000)  # Fetch tickets every 2 seconds
 
         # Timer to save ticket stats to db
-        save_ticket_history_timer = QtCore.QTimer(self)
+        save_ticket_history_timer = QTimer(self)
         save_ticket_history_timer.timeout.connect(self.save_ticket_history_timeout)
         save_ticket_history_timer.start(5 * 60 * 1000)  # Save every 5 mins
 

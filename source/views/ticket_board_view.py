@@ -3,7 +3,7 @@
 import sys
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel
 from PyQt5.QtCore import QDate, QTime, Qt
 from datetime import timedelta
 from datetime import datetime
@@ -17,13 +17,11 @@ from jira_model import jira_model
 BOARD_SIZE = 25
 
 
-class TicketBoardView(QMainWindow):
-
+class TicketBoardView(QWidget):
     def __init__(self):
         super().__init__()
-        self.ticket_board_widget = QWidget()  # Create the widget to contain the ticket board layout
         self.ticket_board_layout = QGridLayout()  # Layout for ticket board
-        self.ticket_board_widget.setLayout(self.ticket_board_layout)
+        self.setLayout(self.ticket_board_layout)
 
         # Create a page title
         title = QLabel()
@@ -161,4 +159,4 @@ class TicketBoardView(QMainWindow):
 if __name__ == 'ticket_board_view':
     ticket_board_view = TicketBoardView()
     # Add the ticket board widget/layout to the main window widget
-    main_view.window.addWidget(ticket_board_view.ticket_board_widget)
+    main_view.window.addWidget(ticket_board_view)

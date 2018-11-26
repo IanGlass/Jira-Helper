@@ -2,17 +2,16 @@
 
 import sys
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QLineEdit, QFormLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QFormLayout
 
 from database_model import database_model
 
 
-class SettingsBoardView(QMainWindow):
+class SettingsBoardView(QWidget):
     def __init__(self):
         super().__init__()
-        self.settings_board_widget = QWidget()
         settings_form = QFormLayout()
-        self.settings_board_widget.setLayout(settings_form)
+        self.setLayout(settings_form)
 
         self.jira_url_label = QLabel()
         self.jira_url_value = QLineEdit()

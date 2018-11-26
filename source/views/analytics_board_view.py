@@ -3,7 +3,7 @@
 import sys
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel
 
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -19,12 +19,11 @@ FROM_ZONE = tz.tzutc()
 TO_ZONE = tz.tzlocal()
 
 
-class AnalyticsBoardView(QMainWindow):
+class AnalyticsBoardView(QWidget):
     def __init__(self):
         super().__init__()
-        self.analytics_board_widget = QWidget()  # Create the widget to contain the analytics board layout
         self.analytics_board_layout = QGridLayout()  # Layout for analytics board
-        self.analytics_board_widget.setLayout(self.analytics_board_layout)
+        self.setLayout(self.analytics_board_layout)
 
         # Create a page title
         title = QLabel()
@@ -160,4 +159,4 @@ if __name__ == 'analytics_board_view':
     print('Instantiating analytics_view')
     analytics_board_view = AnalyticsBoardView()
     # Add the analytics board widget/layout to the main window widget
-    main_view.window.addWidget(analytics_board_view.analytics_board_widget)
+    main_view.window.addWidget(analytics_board_view)

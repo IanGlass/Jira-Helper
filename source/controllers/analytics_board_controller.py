@@ -2,15 +2,14 @@
 
 # GUI
 import sys
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtCore import QTimer, QObject
 
 from analytics_board_view import analytics_board_view
 from database_model import database_model
 from jira_model import jira_model
 
 
-class AnalyticsBoardController(QMainWindow):
+class AnalyticsBoardController(QObject):
     def __init__(self):
         super().__init__()
 

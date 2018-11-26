@@ -1,13 +1,14 @@
 # Creates a child widget for the main window, which is shown when 'settings' button is pushed. Grabs the cached variables from database and displays them. Also pushes the user updated variables to cache which is then saved to database
 
 import sys
-from PyQt5.QtWidgets import QMainWindow, QWidget, QFormLayout, QLabel, QLineEdit
+from PyQt5.QtCore import QObject
+from PyQt5.QtWidgets import QWidget, QFormLayout, QLabel, QLineEdit
 
 from database_model import database_model
 from settings_board_view import settings_board_view
 
 
-class SettingsBoardController(QMainWindow):
+class SettingsBoardController(QObject):
     def __init__(self):
         super().__init__()
 

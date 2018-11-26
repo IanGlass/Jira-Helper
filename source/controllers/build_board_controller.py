@@ -1,14 +1,13 @@
 
 
 import sys
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtCore import QTimer, QObject
 
 from jira_model import jira_model
 from build_board_view import build_board_view
 
 
-class BuildBoardController(QMainWindow):
+class BuildBoardController(QObject):
     def __init__(self):
         super().__init__()
         # Timer update build progress
