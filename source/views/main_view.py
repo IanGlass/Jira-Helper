@@ -28,20 +28,20 @@ class MainView(QMainWindow):
 
         self.window = QStackedWidget()  # Create the main widget for the page
 
-        self.main_window_widget = QWidget()
-        self.main_window_layout = QGridLayout()
-        self.main_window_widget.setLayout(self.main_window_layout)
-        self.menu_widget = QWidget()
-        self.menu_layout = QHBoxLayout()
-        self.menu_widget.setLayout(self.menu_layout)
-        self.main_window_layout.addWidget(self.menu_widget, 0, 0)
-        self.main_window_layout.addWidget(self.window, 1, 0)
-        self.setCentralWidget(self.main_window_widget)
+        main_window_widget = QWidget()
+        main_window_layout = QGridLayout()
+        main_window_widget.setLayout(main_window_layout)
+        menu_widget = QWidget()
+        menu_layout = QHBoxLayout()
+        menu_widget.setLayout(menu_layout)
+        main_window_layout.addWidget(menu_widget, 0, 0)
+        main_window_layout.addWidget(self.window, 1, 0)
+        self.setCentralWidget(main_window_widget)
 
         # Create a settings button
         self.settings_submit_button = QPushButton()
         self.settings_submit_button.setText("Settings")
-        self.menu_layout.addWidget(self.settings_submit_button)
+        menu_layout.addWidget(self.settings_submit_button)
 
         # Create date time
         datetime_font = QFont("Times", 30)
@@ -49,14 +49,14 @@ class MainView(QMainWindow):
         self.date.setFont(datetime_font)
         self.time = QLabel()
         self.time.setFont(datetime_font)
-        self.menu_layout.addWidget(self.date)
-        self.menu_layout.addWidget(self.time)
+        menu_layout.addWidget(self.date)
+        menu_layout.addWidget(self.time)
 
         # Create a clean queue button
         self.clean_queue_button = QPushButton()
         self.clean_queue_button.setText("Clean Queue")
         self.clean_queue_button.setCheckable(True)
-        self.menu_layout.addWidget(self.clean_queue_button)
+        menu_layout.addWidget(self.clean_queue_button)
 
     def update_datetime(self):
         '''Connected to a Qtimer to periodically update the date and time'''

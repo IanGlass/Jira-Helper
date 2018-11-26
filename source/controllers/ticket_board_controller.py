@@ -13,9 +13,9 @@ class TicketBoardController(QObject):
     def __init__(self):
         super().__init__()
         # Timer used to update board
-        self.update_board_timer = QTimer(self)
-        self.update_board_timer.timeout.connect(ticket_board_view.update_board)
-        self.update_board_timer.start(1000)
+        update_ticket_board_timer = QTimer(self)
+        update_ticket_board_timer.timeout.connect(ticket_board_view.update_board)
+        update_ticket_board_timer.start(1000)
 
 
 if __name__ == 'ticket_board_controller':

@@ -44,9 +44,9 @@ class MainController(QObject):
         main_view.settings_submit_button.clicked.connect(self.push_settings_button)
 
         # Timer used to fetch the waiting on customer queue and throw back into
-        self.clean_queue_timer = QTimer(self)
-        self.clean_queue_timer.timeout.connect(self.clean_queue_timeout)
-        self.clean_queue_timer.start(60 * 1000)  # Clean every minute
+        clean_queue_timer = QTimer(self)
+        clean_queue_timer.timeout.connect(self.clean_queue_timeout)
+        clean_queue_timer.start(60 * 1000)  # Clean every minute
 
         # Timer used to transition the page
         self.transition_page_timer = QTimer(self)
@@ -54,16 +54,16 @@ class MainController(QObject):
         self.transition_page_timer.start(TRANSITION_PERIOD)
 
         # Timer update board
-        self.update_datetime_timer = QTimer(self)
-        self.update_datetime_timer.timeout.connect(main_view.update_datetime)
-        self.update_datetime_timer.start(1000)  # update every 1 second
+        update_datetime_timer = QTimer(self)
+        update_datetime_timer.timeout.connect(main_view.update_datetime)
+        update_datetime_timer.start(1000)  # update every 1 second
 
     def clean_queue_timeout(self):
         '''Timeout function to create a thread and execute self.clean_queue()'''
         if main_view.clean_queue_button.isChecked():
             # Load thread into obj
-            self.clean_queue_thread = threading.Thread(target=self.clean_queue)
-            self.clean_queue_thread.start()  # Start thread
+            clean_queue_thread = threading.Thread(target=self.clean_queue)
+            clean_queue_thread.start()  # Start thread
 
     def clean_queue(self):
         '''Periodically called to check through the 'waiting for customer' queue and send an automated message'''

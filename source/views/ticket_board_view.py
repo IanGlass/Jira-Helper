@@ -20,8 +20,8 @@ BOARD_SIZE = 25
 class TicketBoardView(QWidget):
     def __init__(self):
         super().__init__()
-        self.ticket_board_layout = QGridLayout()  # Layout for ticket board
-        self.setLayout(self.ticket_board_layout)
+        ticket_board_layout = QGridLayout()  # Layout for ticket board
+        self.setLayout(ticket_board_layout)
 
         # Create a page title
         title = QLabel()
@@ -29,7 +29,7 @@ class TicketBoardView(QWidget):
         title_font.setBold(True)
         title.setFont(title_font)
         title.setText('Overdue Support Tickets')
-        self.ticket_board_layout.addWidget(title, 0, 0, 1, 0, QtCore.Qt.AlignCenter)
+        ticket_board_layout.addWidget(title, 0, 0, 1, 0, QtCore.Qt.AlignCenter)
 
         # Create column headers
         header_font = QFont("Times", 12)
@@ -38,27 +38,27 @@ class TicketBoardView(QWidget):
         key_header = QLabel()
         key_header.setFont(header_font)
         key_header.setText("Ticket Number")
-        self.ticket_board_layout.addWidget(key_header, 1, 0)
+        ticket_board_layout.addWidget(key_header, 1, 0)
 
         summary_header = QLabel()
         summary_header.setFont(header_font)
         summary_header.setText("Summary")
-        self.ticket_board_layout.addWidget(summary_header, 1, 1)
+        ticket_board_layout.addWidget(summary_header, 1, 1)
 
         assigned_header = QLabel()
         assigned_header.setFont(header_font)
         assigned_header.setText("Assignee")
-        self.ticket_board_layout.addWidget(assigned_header, 1, 2)
+        ticket_board_layout.addWidget(assigned_header, 1, 2)
 
         last_updated_header = QLabel()
         last_updated_header.setFont(header_font)
         last_updated_header.setText("Last Updated")
-        self.ticket_board_layout.addWidget(last_updated_header, 1, 3)
+        ticket_board_layout.addWidget(last_updated_header, 1, 3)
 
         sla_header = QLabel()
         sla_header.setFont(header_font)
         sla_header.setText("Open for")
-        self.ticket_board_layout.addWidget(sla_header, 1, 4)
+        ticket_board_layout.addWidget(sla_header, 1, 4)
 
         # Build the ticket board
         self.col_key = list()
@@ -70,23 +70,23 @@ class TicketBoardView(QWidget):
         for i in range(0, BOARD_SIZE):
             self.col_key.append(QLabel())
             self.col_key[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_key[i], i + 2, 0)
+            ticket_board_layout.addWidget(self.col_key[i], i + 2, 0)
 
             self.col_summary.append(QLabel())
             self.col_summary[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_summary[i], i + 2, 1)
+            ticket_board_layout.addWidget(self.col_summary[i], i + 2, 1)
 
             self.col_assigned.append(QLabel())
             self.col_assigned[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_assigned[i], i + 2, 2)
+            ticket_board_layout.addWidget(self.col_assigned[i], i + 2, 2)
 
             self.col_last_updated.append(QLabel())
             self.col_last_updated[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_last_updated[i], i + 2, 3)
+            ticket_board_layout.addWidget(self.col_last_updated[i], i + 2, 3)
 
             self.col_sla.append(QLabel())
             self.col_sla[i].setFont(text_font)
-            self.ticket_board_layout.addWidget(self.col_sla[i], i + 2, 4)
+            ticket_board_layout.addWidget(self.col_sla[i], i + 2, 4)
 
         self.red_phase = False  # Used to flash rows if red alert
 
