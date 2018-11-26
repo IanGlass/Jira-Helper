@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QLineEdit, QFormLayout
 
 from database_model import database_model
 
+
 class SettingsBoardView(QMainWindow):
     def __init__(self):
         super().__init__()

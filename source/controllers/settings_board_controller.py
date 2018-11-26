@@ -41,5 +41,6 @@ class SettingsBoardController(QMainWindow):
         database_model.settings["melt_down"] = float(settings_board_view.melt_down_value.text()) * (60 * 60 * 24)
         database_model.save_settings()
 
+
 if __name__ == 'settings_board_controller':
     settings_board_controller = SettingsBoardController()

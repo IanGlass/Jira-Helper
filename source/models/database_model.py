@@ -10,23 +10,23 @@ DISPLAY_PERIOD = '14 days'  # This is passed directly into psql query for analyt
 class DB():
     def __init__(self):
         try:  # Try to connect to existing db for ticket analytics
-            self.con = psycopg2.connect(dbname='jira_helper', user='postgres', host='', password='')  # Connect to the db
-            self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            self.cur = self.con.cursor()
+            self.connection = psycopg2.connect(dbname='jira_helper', user='postgres', host='', password='')  # Connect to the db
+            self.connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.cursor = self.connection.cursor()
 
         except:  # If this reached then db does not exist, need to create it
-            self.con = psycopg2.connect(dbname='postgres', user='postgres', host='', password='')  # Connect to default postgres db first
-            self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.connection = psycopg2.connect(dbname='postgres', user='postgres', host='', password='')  # Connect to default postgres db first
+            self.connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-            self.cur = self.con.cursor()
-            self.cur.execute('CREATE DATABASE jira_helper')
+            self.cursor = self.connection.cursor()
+            self.cursor.execute('CREATE DATABASE jira_helper')
 
             # Connect to new db
-            self.con = psycopg2.connect(dbname='jira_helper', user='postgres', host='', password='')
-            self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            self.cur = self.con.cursor()
+            self.connection = psycopg2.connect(dbname='jira_helper', user='postgres', host='', password='')
+            self.connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.cursor = self.connection.cursor()
             # Populate ticket_history with a table and cols
-            self.cur.execute('''CREATE TABLE IF NOT EXISTS ticket_history(
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS ticket_history(
             stamp timestamptz PRIMARY KEY,
             support int NOT NULL,
             in_progress int NOT NULL,
@@ -36,7 +36,7 @@ class DB():
             test int NOT NULL)''')
 
             # Populate settings with a table and cols
-            self.cur.execute('''CREATE TABLE IF NOT EXISTS settings(
+            self.cursor.execute('''CREATE TABLE IF NOT EXISTS settings(
             jira_url TEXT UNIQUE,
             username TEXT UNIQUE,
             api_key TEXT UNIQUE,
@@ -58,23 +58,23 @@ class DB():
 
         date = datetime.utcnow()  # Get current date in UTC to save to db
 
-        self.cur.execute('insert into ticket_history (stamp, support, customer, in_progress, dev, design, test) values (%s, %s, %s, %s, %s, %s, %s)', (date, support, customer, in_progress, dev, design, test))
+        self.cursor.execute('insert into ticket_history (stamp, support, customer, in_progress, dev, design, test) values (%s, %s, %s, %s, %s, %s, %s)', (date, support, customer, in_progress, dev, design, test))
 
     def fetch_ticket_history(self):
         # Fetch ticket history from db, only get tickets younger than DISPLAY_PERIOD
-        self.cur.execute('select stamp, support, customer, in_progress, dev, design, test from ticket_history where stamp > now() - %(period)s::interval', {"period": DISPLAY_PERIOD})
-        history = self.cur.fetchall()
+        self.cursor.execute('select stamp, support, customer, in_progress, dev, design, test from ticket_history where stamp > now() - %(period)s::interval', {"period": DISPLAY_PERIOD})
+        history = self.cursor.fetchall()
         return history
 
     def save_settings(self):
         # Delete everything in the table first
-        self.cur.execute('delete from settings')
+        self.cursor.execute('delete from settings')
         # Add updated values to the table
-        self.cur.execute('insert into settings (jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status, black_alert, red_alert, melt_down) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', (self.settings['jira_url'], self.settings['username'], self.settings['api_key'], self.settings['support_status'], self.settings['customer_status'], self.settings['in_progress_status'], self.settings['dev_status'], self.settings['design_status'], self.settings['test_status'], self.settings['black_alert'], self.settings['red_alert'], self.settings['melt_down']))
+        self.cursor.execute('insert into settings (jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status, black_alert, red_alert, melt_down) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', (self.settings['jira_url'], self.settings['username'], self.settings['api_key'], self.settings['support_status'], self.settings['customer_status'], self.settings['in_progress_status'], self.settings['dev_status'], self.settings['design_status'], self.settings['test_status'], self.settings['black_alert'], self.settings['red_alert'], self.settings['melt_down']))
 
     def fetch_settings(self):  # Populates global settings dictionary from db
-        self.cur.execute('select jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status, black_alert, red_alert, melt_down from settings limit 1')
-        ret = self.cur.fetchall()
+        self.cursor.execute('select jira_url, username, api_key, support_status, customer_status, in_progress_status, dev_status, design_status, test_status, black_alert, red_alert, melt_down from settings limit 1')
+        ret = self.cursor.fetchall()
         try:
             self.settings = {
                 "jira_url": ret[0][0],
