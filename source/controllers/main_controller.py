@@ -1,16 +1,12 @@
 # Creates the main window and top row tool panel containing the 'settings' and 'clean queue' button, time and date. Also performs waiting on customer queue cleaning through a background thread which is toggled using the 'clean queue' button
 
 import sys
-from PyQt5 import QtCore, QtWidgets, QtGui
-# Used to covert and import datetime
-from PyQt5.QtCore import QDate, QTime, Qt
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QMainWindow, QApplication 
 
 from jira import JIRA
 import threading
 from datetime import datetime
-# Used to truncate and convert string to datetime Obj
-from dateutil import parser
-
 import os
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -19,7 +15,7 @@ sys.path.append(dir_path + '\\models')
 sys.path.append(dir_path + '\\views')
 sys.path.append(dir_path + '\\controllers')
 
-app = QtWidgets.QApplication(sys.argv)
+app = QApplication(sys.argv)
 
 from main_view import main_view
 from database_model import database_model
@@ -40,7 +36,7 @@ QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older 
 # Remove self. where its not needed
 
 
-class MainController(QtWidgets.QMainWindow):
+class MainController(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -48,17 +44,17 @@ class MainController(QtWidgets.QMainWindow):
         main_view.settings_submit_button.clicked.connect(self.push_settings_button)
 
         # Timer used to fetch the waiting on customer queue and throw back into
-        self.clean_queue_timer = QtCore.QTimer(self)
+        self.clean_queue_timer = QTimer(self)
         self.clean_queue_timer.timeout.connect(self.clean_queue_timeout)
         self.clean_queue_timer.start(60 * 1000)  # Clean every minute
 
         # Timer used to transition the page
-        self.transition_page_timer = QtCore.QTimer(self)
+        self.transition_page_timer = QTimer(self)
         self.transition_page_timer.timeout.connect(main_view.transition_page)
         self.transition_page_timer.start(TRANSITION_PERIOD)
 
         # Timer update board
-        self.update_datetime_timer = QtCore.QTimer(self)
+        self.update_datetime_timer = QTimer(self)
         self.update_datetime_timer.timeout.connect(main_view.update_datetime)
         self.update_datetime_timer.start(1000)  # update every 1 second
 

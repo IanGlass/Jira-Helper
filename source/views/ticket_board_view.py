@@ -2,14 +2,14 @@
 
 # GUI
 import sys
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel
+from PyQt5.QtCore import QDate, QTime, Qt
 from datetime import timedelta
 from datetime import datetime
 # Used to truncate and convert string to datetime Obj
 from dateutil import parser
-from jira import JIRA
-from PyQt5.QtCore import QDate, QTime, Qt
-import threading
 
 from database_model import database_model
 from main_view import main_view
@@ -18,47 +18,47 @@ from jira_model import jira_model
 BOARD_SIZE = 25
 
 
-class TicketBoardView(QtWidgets.QMainWindow):
+class TicketBoardView(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.ticket_board_widget = QtWidgets.QWidget()  # Create the widget to contain the ticket board layout
-        self.ticket_board_layout = QtWidgets.QGridLayout()  # Layout for ticket board
+        self.ticket_board_widget = QWidget()  # Create the widget to contain the ticket board layout
+        self.ticket_board_layout = QGridLayout()  # Layout for ticket board
         self.ticket_board_widget.setLayout(self.ticket_board_layout)
 
         # Create a page title
-        title = QtWidgets.QLabel()
-        title_font = QtGui.QFont("Times", 20)
+        title = QLabel()
+        title_font = QFont("Times", 20)
         title_font.setBold(True)
         title.setFont(title_font)
         title.setText('Overdue Support Tickets')
         self.ticket_board_layout.addWidget(title, 0, 0, 1, 0, QtCore.Qt.AlignCenter)
 
         # Create column headers
-        header_font = QtGui.QFont("Times", 12)
+        header_font = QFont("Times", 12)
         header_font.setBold(True)
 
-        key_header = QtWidgets.QLabel()
+        key_header = QLabel()
         key_header.setFont(header_font)
         key_header.setText("Ticket Number")
         self.ticket_board_layout.addWidget(key_header, 1, 0)
 
-        summary_header = QtWidgets.QLabel()
+        summary_header = QLabel()
         summary_header.setFont(header_font)
         summary_header.setText("Summary")
         self.ticket_board_layout.addWidget(summary_header, 1, 1)
 
-        assigned_header = QtWidgets.QLabel()
+        assigned_header = QLabel()
         assigned_header.setFont(header_font)
         assigned_header.setText("Assignee")
         self.ticket_board_layout.addWidget(assigned_header, 1, 2)
 
-        last_updated_header = QtWidgets.QLabel()
+        last_updated_header = QLabel()
         last_updated_header.setFont(header_font)
         last_updated_header.setText("Last Updated")
         self.ticket_board_layout.addWidget(last_updated_header, 1, 3)
 
-        sla_header = QtWidgets.QLabel()
+        sla_header = QLabel()
         sla_header.setFont(header_font)
         sla_header.setText("Open for")
         self.ticket_board_layout.addWidget(sla_header, 1, 4)
@@ -69,25 +69,25 @@ class TicketBoardView(QtWidgets.QMainWindow):
         self.col_summary = list()
         self.col_last_updated = list()
         self.col_sla = list()
-        text_font = QtGui.QFont("Times", 12)
+        text_font = QFont("Times", 12)
         for i in range(0, BOARD_SIZE):
-            self.col_key.append(QtWidgets.QLabel())
+            self.col_key.append(QLabel())
             self.col_key[i].setFont(text_font)
             self.ticket_board_layout.addWidget(self.col_key[i], i + 2, 0)
 
-            self.col_summary.append(QtWidgets.QLabel())
+            self.col_summary.append(QLabel())
             self.col_summary[i].setFont(text_font)
             self.ticket_board_layout.addWidget(self.col_summary[i], i + 2, 1)
 
-            self.col_assigned.append(QtWidgets.QLabel())
+            self.col_assigned.append(QLabel())
             self.col_assigned[i].setFont(text_font)
             self.ticket_board_layout.addWidget(self.col_assigned[i], i + 2, 2)
 
-            self.col_last_updated.append(QtWidgets.QLabel())
+            self.col_last_updated.append(QLabel())
             self.col_last_updated[i].setFont(text_font)
             self.ticket_board_layout.addWidget(self.col_last_updated[i], i + 2, 3)
 
-            self.col_sla.append(QtWidgets.QLabel())
+            self.col_sla.append(QLabel())
             self.col_sla[i].setFont(text_font)
             self.ticket_board_layout.addWidget(self.col_sla[i], i + 2, 4)
 

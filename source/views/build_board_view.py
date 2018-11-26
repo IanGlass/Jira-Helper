@@ -1,14 +1,9 @@
+# Creates a view with numerous progress loading bars denoting the progress of a build ticket. Only checks tickets with '-1' suffix
 
-# GUI
 import sys
-from PyQt5 import QtCore, QtWidgets, QtGui
-from datetime import timedelta
-from datetime import datetime
-# Used to truncate and convert string to datetime Obj
-from dateutil import parser
-from jira import JIRA
-from PyQt5.QtCore import QDate, QTime, Qt
-import threading
+from PyQt5 import QtCore
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QMainWindow, QWidget, QGridLayout, QLabel, QProgressBar
 
 from database_model import database_model
 from main_view import main_view
@@ -19,39 +14,39 @@ BOARD_SIZE = 20
 
 # TODO use setStyleSheet() instead of setFont
 
-class BuildBoardView(QtWidgets.QMainWindow):
+class BuildBoardView(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.build_board_widget = QtWidgets.QWidget()  # Create the widget to contain the build board layout
-        self.build_board_layout = QtWidgets.QGridLayout()  # Layout for build board
+        self.build_board_widget = QWidget()  # Create the widget to contain the build board layout
+        self.build_board_layout = QGridLayout()  # Layout for build board
         self.build_board_widget.setLayout(self.build_board_layout)
 
         # Create a page title
-        title = QtWidgets.QLabel()
-        title_font = QtGui.QFont("Times", 20)
+        title = QLabel()
+        title_font = QFont("Times", 20)
         title_font.setBold(True)
         title.setFont(title_font)
         title.setText('Build Queue')
         self.build_board_layout.addWidget(title, 0, 0, 1, 0, QtCore.Qt.AlignCenter)
 
         # Create column headers
-        header_font = QtGui.QFont("Times", 12)
+        header_font = QFont("Times", 12)
         header_font.setBold(True)
 
-        dev_title = QtWidgets.QLabel()
+        dev_title = QLabel()
         dev_title.setFixedHeight(20)
         dev_title.setText('In Dev')
         dev_title.setFont(header_font)
         self.build_board_layout.addWidget(dev_title, 1, 0, QtCore.Qt.AlignCenter)
 
-        design_title = QtWidgets.QLabel()
+        design_title = QLabel()
         design_title.setFixedHeight(20)
         design_title.setText('In Design')
         design_title.setFont(header_font)
         self.build_board_layout.addWidget(design_title, 1, 1, QtCore.Qt.AlignCenter)
 
-        test_title = QtWidgets.QLabel()
+        test_title = QLabel()
         test_title.setFixedHeight(20)
         test_title.setText('In Test')
         test_title.setFont(header_font)
@@ -61,13 +56,13 @@ class BuildBoardView(QtWidgets.QMainWindow):
         self.progress_key = list()
 
         # Build a matrix of progress bars for ticket status
-        text_font = QtGui.QFont("Times", 12)
+        text_font = QFont("Times", 12)
         self.progress = list()
         for i in range(0, BOARD_SIZE):
-            self.progress.append(QtWidgets.QProgressBar())
+            self.progress.append(QProgressBar())
             self.progress[i].setRange(0, 6)
             self.progress[i].setTextVisible(False)
-            self.progress_key.append(QtWidgets.QLabel())
+            self.progress_key.append(QLabel())
             self.progress_key[i].setFont(text_font)
             self.build_board_layout.addWidget(self.progress[i], i + 2, 0, 2, 0)
 

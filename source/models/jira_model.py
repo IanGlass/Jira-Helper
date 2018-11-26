@@ -17,15 +17,15 @@ class JiraModel(QtWidgets.QMainWindow):
         self.test_tickets = list()
         self.build_tickets = list()
 
-        # Timer fetch tickets from JIRA server
-        self.fetch_tickets_timer = QtCore.QTimer(self)
-        self.fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
-        self.fetch_tickets_timer.start(2000)  # Fetch tickets every 2 seconds
+        # Timer to fetch tickets from JIRA server
+        fetch_tickets_timer = QtCore.QTimer(self)
+        fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
+        fetch_tickets_timer.start(2000)  # Fetch tickets every 2 seconds
 
         # Timer to save ticket stats to db
-        self.save_ticket_history_timer = QtCore.QTimer(self)
-        self.save_ticket_history_timer.timeout.connect(self.save_ticket_history_timeout)
-        self.save_ticket_history_timer.start(5 * 60 * 1000)  # Save every 5 mins
+        save_ticket_history_timer = QtCore.QTimer(self)
+        save_ticket_history_timer.timeout.connect(self.save_ticket_history_timeout)
+        save_ticket_history_timer.start(5 * 60 * 1000)  # Save every 5 mins
 
     def fetch_tickets_timeout(self):
         self.fetch_tickets_thread = threading.Thread(target=self.fetch_tickets)  # Load thread into obj
