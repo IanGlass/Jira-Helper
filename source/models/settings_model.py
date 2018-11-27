@@ -19,9 +19,11 @@ class SettingsModel(Base):
     dev_status = Column(String)
     design_status = Column(String)
     test_status = Column(String)
-    black_alert = Column(Float, default=172800)
-    red_alert = Column(Float, default=432000)
-    melt_down = Column(Float, default=864000)
+    black_alert = Column(Float)
+    red_alert = Column(Float)
+    melt_down = Column(Float)
+    clean_queue_delay = Column(Float)
+    automated_message = Column(String)
 
 
 # Create an engine that stores data in the local directory's jira_helper.sql file

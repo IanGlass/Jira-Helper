@@ -36,7 +36,9 @@ class SettingsBoardController(QObject):
                 test_status='',
                 black_alert=172800,
                 red_alert=432000,
-                melt_down=864000
+                melt_down=864000,
+                clean_queue_delay=864000,
+                automated_message=''
             )
             # Add the new record so that save_settings has something to grab
             self.session.add(settings)
@@ -54,6 +56,8 @@ class SettingsBoardController(QObject):
         settings_board_view.black_alert_value.setText(str(settings.black_alert / (60 * 60 * 24)))
         settings_board_view.red_alert_value.setText(str(settings.red_alert / (60 * 60 * 24)))
         settings_board_view.melt_down_value.setText(str(settings.melt_down / (60 * 60 * 24)))
+        settings_board_view.clean_queue_delay_value.setText(str(settings.clean_queue_delay / (60 * 60 * 24)))
+        settings_board_view.automated_message_value.setText(settings.automated_message)
 
     def save_settings(self):
         settings = self.session.query(SettingsModel).first()
@@ -71,6 +75,8 @@ class SettingsBoardController(QObject):
         settings.black_alert = float(settings_board_view.black_alert_value.text()) * (60 * 60 * 24)
         settings.red_alert = float(settings_board_view.red_alert_value.text()) * (60 * 60 * 24)
         settings.melt_down = float(settings_board_view.melt_down_value.text()) * (60 * 60 * 24)
+        settings.clean_queue_delay = float(settings_board_view.clean_queue_delay_value.text()) * (60 * 60 * 24)
+        settings.automated_message = str(settings_board_view.automated_message_value.text())
 
         self.session.query(SettingsModel).filter(SettingsModel.ID == 0).update({"jira_url": settings.jira_url})
         self.session.commit()

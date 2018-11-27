@@ -71,6 +71,16 @@ class SettingsBoardView(QWidget):
         self.melt_down_label.setText("Age of solid red tickets (days), must be > flashing red tickets")
         settings_form.addRow(self.melt_down_label, self.melt_down_value)
 
+        self.clean_queue_delay_label = QLabel()
+        self.clean_queue_delay_value = QLineEdit()
+        self.clean_queue_delay_label.setText("Time in customer queue (days) until automated message is sent")
+        settings_form.addRow(self.clean_queue_delay_label, self.clean_queue_delay_value)
+
+        self.automated_message_label = QLabel()
+        self.automated_message_value = QLineEdit()
+        self.automated_message_label.setText("Please enter your automated message here")
+        settings_form.addRow(self.automated_message_label, self.automated_message_value)
+
 
 if __name__ == 'settings_board_view':
     print('Instantiating settings_view')
