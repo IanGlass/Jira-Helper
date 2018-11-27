@@ -110,6 +110,7 @@ class MainController(QObject):
         '''Push button function to trigger transitions again, remove the settings widget, save the settings to cache and db and change its own on push function'''
         self.transition_page_timer.start()
         main_view.window.removeWidget(settings_board_view)  # Remove settings board so it doesn't show in transition
+        main_view.window.setCurrentIndex(0)
 
         # Save values to cache and db
         settings_board_controller.save_settings()
