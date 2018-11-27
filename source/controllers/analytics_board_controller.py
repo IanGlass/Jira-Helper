@@ -5,13 +5,12 @@ import sys
 from PyQt5.QtCore import QTimer, QObject
 
 from analytics_board_view import analytics_board_view
-from database_model import database_model
-from jira_model import jira_model
+from jira_service import jira_service
 
 
 class AnalyticsBoardController(QObject):
     def __init__(self):
-        super().__init__()
+        super(AnalyticsBoardController, self).__init__()
 
         # Timer used to update the analytics page
         update_analytics_timer = QTimer(self)

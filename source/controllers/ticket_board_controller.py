@@ -4,14 +4,13 @@
 import sys
 from PyQt5.QtCore import QTimer, QObject
 
-from jira_model import jira_model
+from jira_service import jira_service
 from ticket_board_view import ticket_board_view
-from database_model import database_model
 
 
 class TicketBoardController(QObject):
     def __init__(self):
-        super().__init__()
+        super(TicketBoardController, self).__init__()
         # Timer used to update board
         update_ticket_board_timer = QTimer(self)
         update_ticket_board_timer.timeout.connect(ticket_board_view.update_board)

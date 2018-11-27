@@ -1,0 +1,2 @@
+# Ignore all databases containing deprecated information #
+*.db

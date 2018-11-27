@@ -9,17 +9,17 @@ import threading
 from datetime import datetime
 import os
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path = dir_path[:-12]
 sys.path.append(dir_path + '\\models')
 sys.path.append(dir_path + '\\views')
 sys.path.append(dir_path + '\\controllers')
+sys.path.append(dir_path + '\\services')
 
 app = QApplication(sys.argv)
-
-from main_view import main_view
-from database_model import database_model
-from jira_model import jira_model
 
 AUTOMATED_MESSAGE = "Hi Team,\n\nThis is an automated email from the Wherewolf Support System.\n\nIt has been over 7 days since we have received a responce in relation to your support ticket.\n\nCan you please confirm if the ticket/request requires further attention or if it has been resolved and can be closed\n\nPlease respond to this email so we can take appropriate action.\n\nMany thanks,\n\nWherewolf Support"
 TRANSITION_PERIOD = 10 * 1000  # (miliseconds) time between page swap
@@ -29,7 +29,10 @@ QUEUE_OVERDUE = 60 * 60 * 24 * 7  # (seconds) waiting on customer tickets older 
 
 class MainController(QObject):
     def __init__(self):
-        super().__init__()
+        super(MainController, self).__init__()
+        engine = create_engine('sqlite:///jira_helper.db')
+        Base.metadata.bind = engine
+        self.DBSession = sessionmaker(bind=engine)
 
         # Attach controller function to submit button view
         main_view.settings_submit_button.clicked.connect(self.push_settings_button)
@@ -60,7 +63,8 @@ class MainController(QObject):
         '''Periodically called to check through the 'waiting for customer' queue and send an automated message'''
         # Try to get a transition key if there are any tickets in waiting for customer
         try:
-            jira = JIRA(basic_auth=(database.settings['username'], database.settings['api_key']), options={'server': database.settings['jira_url']})
+            session = self.DBSession()
+            jira = JIRA(basic_auth=(str(settings.username), str(settings.api_key)), options={'server': settings.jira_url})
             # Get list of transitions for a ticket in the waiting on customer queue
             transitions = jira.transitions(ticket_board.customer_tickets[0].key)
             # Find the transition key needed to move from waiting for customer to cold tickets queue
@@ -94,7 +98,7 @@ class MainController(QObject):
         main_view.window.setCurrentWidget(settings_board_view)
 
         # Load values
-        settings_board_controller.load_from_cache()
+        settings_board_controller.load_settings()
 
         # Remove all currently connected functions
         main_view.settings_submit_button.disconnect()
@@ -108,7 +112,7 @@ class MainController(QObject):
         main_view.window.removeWidget(settings_board_view)  # Remove settings board so it doesn't show in transition
 
         # Save values to cache and db
-        settings_board_controller.save_to_cache()
+        settings_board_controller.save_settings()
 
         main_view.settings_submit_button.disconnect()
         main_view.settings_submit_button.clicked.connect(main_controller.push_settings_button)
@@ -116,6 +120,11 @@ class MainController(QObject):
 
 
 if __name__ == '__main__':
+    from main_view import main_view
+    # Instantiate models, dbs and services
+    from settings_model import Base, SettingsModel
+    from ticket_history_model import TicketHistoryModel
+    from jira_service import jira_service
     main_controller = MainController()
     main_view.setWindowTitle('Jira Helper')
     # Can't import module until instantiation of main_view

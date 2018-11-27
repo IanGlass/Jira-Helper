@@ -4,43 +4,76 @@ import sys
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QWidget, QFormLayout, QLabel, QLineEdit
 
-from database_model import database_model
 from settings_board_view import settings_board_view
+from settings_model import Base, SettingsModel
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 class SettingsBoardController(QObject):
     def __init__(self):
-        super().__init__()
+        super(SettingsBoardController, self).__init__()
+        engine = create_engine('sqlite:///jira_helper.db')
+        Base.metadata.bind = engine
+        DBSession = sessionmaker(bind=engine)
+        self.session = DBSession()
+        self.settings = SettingsModel()
 
-    def load_from_cache(self):
-        database_model.fetch_settings()
-        settings_board_view.jira_url_value.setText(str(database_model.settings['jira_url']))
-        settings_board_view.username_value.setText(str(database_model.settings['username']))
-        settings_board_view.api_key_value.setText(str(database_model.settings['api_key']))
-        settings_board_view.support_status_value.setText(str(database_model.settings['support_status']))
-        settings_board_view.customer_status_value.setText(str(database_model.settings['customer_status']))
-        settings_board_view.in_progress_status_value.setText(str(database_model.settings['in_progress_status']))
-        settings_board_view.dev_status_value.setText(str(database_model.settings['dev_status']))
-        settings_board_view.design_status_value.setText(str(database_model.settings['design_status']))
-        settings_board_view.test_status_value.setText(str(database_model.settings['test_status']))
-        settings_board_view.black_alert_value.setText(str(database_model.settings['black_alert'] / (60 * 60 * 24)))
-        settings_board_view.red_alert_value.setText(str(database_model.settings['red_alert'] / (60 * 60 * 24)))
-        settings_board_view.melt_down_value.setText(str(database_model.settings['melt_down'] / (60 * 60 * 24)))
+    def load_settings(self):
+        settings = self.session.query(SettingsModel).first()
+        if (settings is None):
+            # Create settings row if none exists, with some defaults
+            settings = SettingsModel(
+                ID=100,
+                jira_url='',
+                username='',
+                api_key='',
+                support_status='',
+                customer_status='',
+                in_progress_status='',
+                dev_status='',
+                design_status='',
+                test_status='',
+                black_alert=172800,
+                red_alert=432000,
+                melt_down=864000
+            )
+            # Add the new record so that save_settings has something to grab
+            self.session.add(settings)
+            self.session.commit()
 
-    def save_to_cache(self):
-        database_model.settings["jira_url"] = str(settings_board_view.jira_url_value.text())
-        database_model.settings["username"] = str(settings_board_view.username_value.text())
-        database_model.settings["api_key"] = str(settings_board_view.api_key_value.text())
-        database_model.settings["support_status"] = str(settings_board_view.support_status_value.text())
-        database_model.settings["customer_status"] = str(settings_board_view.customer_status_value.text())
-        database_model.settings["in_progress_status"] = str(settings_board_view.in_progress_status_value.text())
-        database_model.settings["dev_status"] = str(settings_board_view.dev_status_value.text())
-        database_model.settings["design_status"] = str(settings_board_view.design_status_value.text())
-        database_model.settings["test_status"] = str(settings_board_view.test_status_value.text())
-        database_model.settings["black_alert"] = float(settings_board_view.black_alert_value.text()) * (60 * 60 * 24)
-        database_model.settings["red_alert"] = float(settings_board_view.red_alert_value.text()) * (60 * 60 * 24)
-        database_model.settings["melt_down"] = float(settings_board_view.melt_down_value.text()) * (60 * 60 * 24)
-        database_model.save_settings()
+        settings_board_view.jira_url_value.setText(settings.jira_url)
+        settings_board_view.username_value.setText(settings.username)
+        settings_board_view.api_key_value.setText(settings.api_key)
+        settings_board_view.support_status_value.setText(settings.support_status)
+        settings_board_view.customer_status_value.setText(settings.customer_status)
+        settings_board_view.in_progress_status_value.setText(settings.in_progress_status)
+        settings_board_view.dev_status_value.setText(settings.dev_status)
+        settings_board_view.design_status_value.setText(settings.design_status)
+        settings_board_view.test_status_value.setText(settings.test_status)
+        settings_board_view.black_alert_value.setText(str(settings.black_alert / (60 * 60 * 24)))
+        settings_board_view.red_alert_value.setText(str(settings.red_alert / (60 * 60 * 24)))
+        settings_board_view.melt_down_value.setText(str(settings.melt_down / (60 * 60 * 24)))
+
+    def save_settings(self):
+        settings = self.session.query(SettingsModel).first()
+
+        # Load settings into db obj from view
+        settings.jira_url = str(settings_board_view.jira_url_value.text())
+        settings.username = str(settings_board_view.username_value.text())
+        settings.api_key = str(settings_board_view.api_key_value.text())
+        settings.support_status = str(settings_board_view.support_status_value.text())
+        settings.customer_status = str(settings_board_view.customer_status_value.text())
+        settings.in_progress_status = str(settings_board_view.in_progress_status_value.text())
+        settings.dev_status = str(settings_board_view.dev_status_value.text())
+        settings.design_status = str(settings_board_view.design_status_value.text())
+        settings.test_status = str(settings_board_view.test_status_value.text())
+        settings.black_alert = float(settings_board_view.black_alert_value.text()) * (60 * 60 * 24)
+        settings.red_alert = float(settings_board_view.red_alert_value.text()) * (60 * 60 * 24)
+        settings.melt_down = float(settings_board_view.melt_down_value.text()) * (60 * 60 * 24)
+
+        self.session.query(SettingsModel).filter(SettingsModel.ID == 0).update({"jira_url": settings.jira_url})
+        self.session.commit()
 
 
 if __name__ == 'settings_board_controller':

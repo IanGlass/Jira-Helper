@@ -10,16 +10,23 @@ from datetime import datetime
 # Used to truncate and convert string to datetime Obj
 from dateutil import parser
 
-from database_model import database_model
 from main_view import main_view
-from jira_model import jira_model
+from jira_service import jira_service
+from settings_model import Base, SettingsModel
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 BOARD_SIZE = 25
 
 
 class TicketBoardView(QWidget):
     def __init__(self):
-        super().__init__()
+        super(TicketBoardView, self).__init__()
+        engine = create_engine('sqlite:///jira_helper.db')
+        Base.metadata.bind = engine
+        self.DBSession = sessionmaker(bind=engine)
+
         ticket_board_layout = QGridLayout()  # Layout for ticket board
         self.setLayout(ticket_board_layout)
 
@@ -106,7 +113,7 @@ class TicketBoardView(QWidget):
         else:
             self.red_phase = True
         try:
-            for support_ticket in jira_model.support_tickets:
+            for support_ticket in jira_service.support_tickets:
                 date = datetime.now()  # Get current date
                 # Truncate and convert string to datetime obj
                 ticket_date = parser.parse(support_ticket.fields.updated[0:23])
@@ -118,14 +125,18 @@ class TicketBoardView(QWidget):
                 except:  # Grab last dictionary in completedCycles array instead, is always an array
                     open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles']) - 1]['elapsedTime']['millis'] / 1000))
 
-                if (last_updated > database_model.settings['black_alert'] and count <= BOARD_SIZE):  # Only display if board is not full
-                    if (last_updated > database_model.settings['melt_down']):  # Things are serious!
+                session = self.DBSession()
+                settings = session.query(SettingsModel).first()
+                session.close()
+
+                if (last_updated > settings.black_alert and count <= BOARD_SIZE):  # Only display if board is not full
+                    if (last_updated > settings.melt_down):  # Things are serious!
                         self.col_key[count].setStyleSheet('color: red')
                         self.col_summary[count].setStyleSheet('color: red')
                         self.col_assigned[count].setStyleSheet('color: red')
                         self.col_last_updated[count].setStyleSheet('color: red')
                         self.col_sla[count].setStyleSheet('color: red')
-                    elif (last_updated > database_model.settings['red_alert']):  # Things are not so Ok
+                    elif (last_updated > settings.red_alert):  # Things are not so Ok
                         if (self.red_phase):
                             self.col_key[count].setStyleSheet('color: red')
                             self.col_summary[count].setStyleSheet('color: red')

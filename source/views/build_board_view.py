@@ -5,16 +5,23 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QProgressBar
 
-from database_model import database_model
 from main_view import main_view
-from jira_model import jira_model
+from jira_service import jira_service
+from settings_model import Base, SettingsModel
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 BOARD_SIZE = 20
 
 
 class BuildBoardView(QWidget):
     def __init__(self):
-        super().__init__()
+        super(BuildBoardView, self).__init__()
+        engine = create_engine('sqlite:///jira_helper.db')
+        Base.metadata.bind = engine
+        self.DBSession = sessionmaker(bind=engine)
+
         self.build_board_layout = QGridLayout()  # Layout for build board
         self.setLayout(self.build_board_layout)
 
@@ -69,19 +76,23 @@ class BuildBoardView(QWidget):
             self.build_board_layout.removeWidget(self.progress_key[i])
 
     def update_board(self):
+        session = self.DBSession()
+        settings = session.query(SettingsModel).first()
+        # Close the session for this thread OR FACE ERRORS!
+        session.close()
         self.clean_board()
         # Counter for filling board
         count = 0
-        for ticket in jira_model.build_tickets:
+        for ticket in jira_service.build_tickets:
             # Prevent overflow
             if count < BOARD_SIZE:
-                if (ticket.raw['fields']['status']['name'].lower() == database_model.settings['dev_status']):
+                if (ticket.raw['fields']['status']['name'].lower() == settings.dev_status):
                     self.progress[count].setValue(1)  # Set the progress bar level
                     self.build_board_layout.addWidget(self.progress_key[count], count + 2, 0, QtCore.Qt.AlignCenter)  # Add the ticket under its relevant title
-                elif (ticket.raw['fields']['status']['name'].lower() == database_model.settings['design_status']):
+                elif (ticket.raw['fields']['status']['name'].lower() == settings.design_status):
                     self.progress[count].setValue(3)  # Set the progress bar level
                     self.build_board_layout.addWidget(self.progress_key[count], count + 2, 1, QtCore.Qt.AlignCenter)  # Add the ticket under its relevant title
-                elif (ticket.raw['fields']['status']['name'].lower() == database_model.settings['test_status']):
+                elif (ticket.raw['fields']['status']['name'].lower() == settings.test_status):
                     self.progress[count].setValue(5)  # Set the progress bar level
                     self.build_board_layout.addWidget(self.progress_key[count], count + 2, 2, QtCore.Qt.AlignCenter)  # Add the ticket under its relevant title
                 self.progress_key[count].setText(str(ticket.raw['key']))  # Add the ticket key to the bar

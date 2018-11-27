@@ -1,21 +1,26 @@
 #!/bin/bash
 
-#Install latest version of pip package manager
-python -m pip install --upgrade pip
+# Install latest version of pip package manager
+python -m pip install -U pip
 
-#Install PyQt5 required to run program
+# Install PyQt5 required to run program
 pip install PyQt5
 
-#Install JIRA API for Python
+# Install JIRA API for Python
 pip install jira
 
-#Install for postgresql
-pip install psycopg2
-
-#Install linter used when modifying code
+# Install linter used when modifying code
 pip install pycodestyle
 
-#install matplotlib required to plot in analytics board
+# Install matplotlib required to plot in analytics board
 python -m pip install -U matplotlib
 
-python source/main.py
+# Install database conncetor for postgresql
+pip install psycopg2
+
+# Install SQLAlchemy ORM for python and psycopg
+pip install SQLAlchemy
+
+pip install pysqlite3
+
+python source/controllers/main_controller.py

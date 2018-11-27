@@ -9,11 +9,14 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from dateutil import tz   # Used to convert local-UTC
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from main_view import main_view
-from jira_model import jira_model
-from database_model import database_model
+from jira_service import jira_service
+from ticket_history_model import TicketHistoryModel, Base
 
 FROM_ZONE = tz.tzutc()
 TO_ZONE = tz.tzlocal()
@@ -21,7 +24,11 @@ TO_ZONE = tz.tzlocal()
 
 class AnalyticsBoardView(QWidget):
     def __init__(self):
-        super().__init__()
+        super(AnalyticsBoardView, self).__init__()
+        engine = create_engine('sqlite:///jira_helper.db')
+        Base.metadata.bind = engine
+        self.DBSession = sessionmaker(bind=engine)
+
         analytics_board_layout = QGridLayout()  # Layout for analytics board
         self.setLayout(analytics_board_layout)
 
@@ -44,7 +51,7 @@ class AnalyticsBoardView(QWidget):
 
         customer_header = QLabel()
         customer_header.setFont(header_font)
-        customer_header.setText("# of support tickets")
+        customer_header.setText("# of customer tickets")
         analytics_board_layout.addWidget(customer_header, 1, 1, QtCore.Qt.AlignCenter)
 
         in_progress_header = QLabel()
@@ -109,50 +116,31 @@ class AnalyticsBoardView(QWidget):
         self.ax.set_ylabel('# of tickets')
         self.figure.patch.set_facecolor([240 / 255, 240 / 255, 240 / 255, 1])
 
-        # Global vars
-        self.date_history = list()
-        self.support_history = list()
-        self.in_progress_history = list()
-        self.customer_history = list()
-
     def update_analytics(self):
-        self.ticket_history = database_model.fetch_ticket_history()
-
-        if not self.ticket_history:  # db was empty so prevent errors
-            date = datetime.now()
-            self.ticket_history.append([date, 0, 0, 0, 0, 0, 0])
-
-        # Empty lists so we don't get double ups
-        self.date_history.clear()
-        self.support_history.clear()
-        self.in_progress_history.clear()
-        self.customer_history.clear()
-
-        # TODO this is horrible
-        for i in range(0, len(self.ticket_history)):
-            # Add timedate to date_history from UTC to local time zone
-            self.date_history.append(self.ticket_history[i][0].astimezone(TO_ZONE))
-            self.support_history.append(self.ticket_history[i][1])
-            self.in_progress_history.append(self.ticket_history[i][2])
-            self.customer_history.append(self.ticket_history[i][3])
-
         try:
-            self.col_support[1].setText(str(len(jira_model.support_tickets)))
-            self.col_customer[1].setText(str(len(jira_model.customer_tickets)))
-            self.col_in_progress[1].setText(str(len(jira_model.in_progress_tickets)))
-            self.col_dev[1].setText(str(len(jira_model.dev_tickets)))
-            self.col_design[1].setText(str(len(jira_model.design_tickets)))
-            self.col_test[1].setText(str(len(jira_model.test_tickets)))
+            session = self.DBSession()
+            date_history = session.query(TicketHistoryModel.stamp).all()
+            support_history = session.query(TicketHistoryModel.support).all()
+            customer_history = session.query(TicketHistoryModel.customer).all()
+            in_progress_history = session.query(TicketHistoryModel.in_progress).all()
+            session.close()
+            # Updates overall numbers view
+            self.col_support[1].setText(str(len(jira_service.support_tickets)))
+            self.col_customer[1].setText(str(len(jira_service.customer_tickets)))
+            self.col_in_progress[1].setText(str(len(jira_service.in_progress_tickets)))
+            self.col_dev[1].setText(str(len(jira_service.dev_tickets)))
+            self.col_design[1].setText(str(len(jira_service.design_tickets)))
+            self.col_test[1].setText(str(len(jira_service.test_tickets)))
+
+            self.ax.clear()
+            self.ax.plot(date_history, support_history, 'r-', label='waiting for support')
+            self.ax.plot(date_history, customer_history, 'b-', label='waiting for customer')
+            self.ax.plot(date_history, in_progress_history, 'g-', label='in progress')
+            self.ax.legend(loc='best')
+            self.canvas.draw()
 
         except:
             print('Missing queue status configuration')
-
-        self.ax.clear()
-        self.ax.plot(self.date_history, self.support_history, 'r-', label='waiting for support')
-        self.ax.plot(self.date_history, self.customer_history, 'b-', label='waiting for customer')
-        self.ax.plot(self.date_history, self.in_progress_history, 'g-', label='in progress')
-        self.ax.legend(loc='best')
-        self.canvas.draw()
 
 
 if __name__ == 'analytics_board_view':

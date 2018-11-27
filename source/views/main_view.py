@@ -10,7 +10,7 @@ from PyQt5.QtCore import QDate, QTime, Qt
 
 class MainView(QMainWindow):
     def __init__(self):
-        super().__init__()
+        super(MainView, self).__init__()
 
         self.window = QStackedWidget()  # Create the main widget for the page
 
