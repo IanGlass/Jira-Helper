@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Add precommit hooks for dev
+preCommit="#!/bin/bash
+
+pycodestyle source/
+RESULT=\$?
+[ \$RESULT -ne 0 ] && exit 1
+
+pycodestyle tests/
+RESULT=\$?
+[ \$RESULT -ne 0 ] && exit 1
+exit 0"
+
+# Check if pre-commit hooks already exists
+if [ ! -f .git/hooks/pre-commit ]
+then
+     echo "$preCommit" > .git/hooks/pre-commit
+fi
+
 # Install latest version of pip package manager
 python -m pip install -U pip
 
