@@ -54,10 +54,10 @@ class JiraService(QObject):
             session.close()
             # Create a JIRA object and populate ticket arrays
             self.jira = JIRA(basic_auth=(
-                str(settings.username), 
-                str(settings.api_key)), 
+                str(settings.username),
+                str(settings.api_key)),
                 options={'server': settings.jira_url}
-                )
+            )
             self.support_tickets = self.jira.search_issues('status=' + settings.support_status.replace(" ", "\ "), maxResults=200)
             self.customer_tickets = self.jira.search_issues('status=' + settings.customer_status.replace(" ", "\ "), maxResults=200)
             self.in_progress_tickets = self.jira.search_issues('status=' + settings.in_progress_status.replace(" ", "\ "), maxResults=200)
