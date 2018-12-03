@@ -4,6 +4,7 @@ This project uses the MVC design pattern and assumes the user is using the follo
 To run the program, please run the Jira-Helper.sh script
 ## Display Boards
 Provides three dashboards:
+
 1). Displays overdue tickets waiting on support staff, either in black, red or flashing red. The time until a ticket becomes overdue can be configured in the settings panel.
 2). Displays the current number of tickets:
 * Waiting on support staff
@@ -20,8 +21,9 @@ Provides three dashboards:
 ## Automated Cleanup
 The program can also perform automated cleanup in the background. An automated message (user defined) is sent to waiting on customer tickets which have not had a reply for longer than a user defined period. This function can be toggled with the *Clean Queue* button. The ticket is then set to *Resolved* unless the customer replied, in which case it returns to the waiting on support queue. The transition to resolve tickets must be named *Resolve this issue* for this functionality to work.
 
-##User Configuration
+## User Configuration
 The user must provide the following information which can be entered into the *Settings* tab:
+
 * The Jira project URL
 * The Jira user as an email address
 * The user API key
