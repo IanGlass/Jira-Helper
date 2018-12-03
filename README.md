@@ -1,34 +1,39 @@
 # Raspi-Jira-Display-Board
+This project uses the MVC design pattern and assumes the user is using the following Jira workflow:
 
-SHELL SCRIPT CURRENTLY NOT WORKING
+To run the program, please run the Jira-Helper.sh script
+## Display Boards
+Provides three dashboards:
+1). Displays overdue tickets waiting on support staff, either in black, red or flashing red. The time until a ticket becomes overdue can be configured in the settings panel.
+2). Displays the current number of tickets:
+* Waiting on support staff
+* Waiting on response from the customer
+* In progress
+* In the development
+* In design
+* In test and waiting release 
+3). Displays current build tickets with the suffix of '-1' in one of three stages:
+* In development
+* In design
+* In test and waiting release
 
-Review code naming convention
+## Automated Cleanup
+The program can also perform automated cleanup in the background. An automated message (user defined) is sent to waiting on customer tickets which have not had a reply for longer than a user defined period. This function can be toggled with the 'Clean Queue' button. The ticket is then set to 'Resolved' unless the customer replied, in which case it returns to the waiting on support queue. The transition to resolve tickets must be named 'Resolve this issue' for this functionality to work.
 
-Provides a dashboard to display overdue tickets, with overdue tickets displayed in black text, older tickets displayed as flashing red and oldest displayed as solid red text
+##User Configuration
+The user must provide the following information which can be entered into the 'Settings' tab:
+* The Jira project URL
+* The Jira user as an email address
+* The user API key
+* The status names for each of the 7 queues
+* An automated message
 
-Display the current number of tickets in each project and on the Dev kanban board
+## Development
+The following dependencies are automatically installed when running the Jira-Helper.sh script:
 
-A secondary module performs background cleanup of old tickets waiting on a response from the customer.
-Sends an automated follow up message to the client after 7 days of no response. Currently, the program will send tickets with an automated message as the last comment and older than 7 days (last updated will be reset when the first automated message is sent) to a 'cold queue' to be manually processed by a human.
-Button in Jira to send to 'cold queue' will need to be named "Respond to support" for this to work, transition id is dynamically fetched
 
-This project assumes that your setup uses the following status':
-* waiting on support
-* waiting on customer
-* in progress
-* dev
-* design
-* test
 
-This project consists of two parts: 
-A shellscript to:
-* Install project dependencies (PyQt, JIRA Python);
-* Configure the Jira API key (saved in ~/.netrc) which is used to pull tickets into the Python module;
-* Save the Jira project name which tickets are pulled from
-
-This project uses pycodestyle and python unittest added to the git pre-commit hooks.
-
-A Python module to display overdue tickets using PyQt and perform 'silent' actions on tickets in the background.
+This project uses pycodestyle added to the git pre-commit hooks.
 
 *Add to README*
 * Flow diagram of software workflow
@@ -37,14 +42,6 @@ A Python module to display overdue tickets using PyQt and perform 'silent' actio
 * Block descriptions of code
 * Setup instructions to get running on a raspberry pi 3B
 * Section on manually accessing the PSQL DB
-
-psql ticketdb to access db
-select * from ticket_stats;
-timedate is stored in UTC and converted to local in python script
-
-Analytics board will take up to 5 mins to start populating after correct credentials are entered
- 
-Postgresql will need to be installed manually for this module to work
 
 development board will populate with dev tickets first, then design then test if there is space
 Some defaults exist for clean queue delay and automated message
