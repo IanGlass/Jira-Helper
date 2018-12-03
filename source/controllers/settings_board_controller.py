@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QWidget, QFormLayout, QLabel, QLineEdit
 
 from settings_board_view import settings_board_view
 from settings_model import Base, SettingsModel
+
+from jira import JIRA
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -18,6 +20,22 @@ class SettingsBoardController(QObject):
         DBSession = sessionmaker(bind=engine)
         self.session = DBSession()
         self.settings = SettingsModel()
+
+    def toggle_display_boards(self):
+        if (settings_board_view.toggle_ticket_board_button.isChecked()):
+            main_view.window.addWidget(ticket_board_view)
+        else:
+            main_view.window.removeWidget(ticket_board_view)
+
+        if (settings_board_view.toggle_analytics_board_button.isChecked()):
+            main_view.window.addWidget(analytics_board_view)
+        else:
+            main_view.window.removeWidget(analytics_board_view)
+
+        if (settings_board_view.toggle_build_board_button.isChecked()):
+            main_view.window.addWidget(build_board_view)
+        else:
+            main_view.window.removeWidget(build_board_view)
 
     def load_settings(self):
         settings = self.session.query(SettingsModel).first()
@@ -60,6 +78,8 @@ class SettingsBoardController(QObject):
         settings_board_view.automated_message_value.setText(settings.automated_message)
 
     def save_settings(self):
+        # Toggle the board status' on submit
+        self.toggle_display_boards()
         settings = self.session.query(SettingsModel).first()
 
         # Load settings into db obj from view
@@ -84,3 +104,7 @@ class SettingsBoardController(QObject):
 
 if __name__ == 'settings_board_controller':
     settings_board_controller = SettingsBoardController()
+    from main_view import main_view
+    from ticket_board_view import ticket_board_view
+    from analytics_board_view import analytics_board_view
+    from build_board_view import build_board_view

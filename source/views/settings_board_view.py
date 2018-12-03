@@ -2,7 +2,7 @@
 
 import sys
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QFormLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QFormLayout, QPushButton
 
 
 class SettingsBoardView(QWidget):
@@ -80,6 +80,25 @@ class SettingsBoardView(QWidget):
         self.automated_message_value = QLineEdit()
         self.automated_message_label.setText("Please enter your automated message here")
         settings_form.addRow(self.automated_message_label, self.automated_message_value)
+
+        self.toggle_ticket_board_button = QPushButton()
+        self.toggle_ticket_board_button.setCheckable(True)
+        self.toggle_ticket_board_button.setChecked(True)
+        self.toggle_ticket_board_button.setText('Enable/Disable Ticket Board')
+
+        self.toggle_analytics_board_button = QPushButton()
+        self.toggle_analytics_board_button.setCheckable(True)
+        self.toggle_analytics_board_button.setChecked(True)
+        self.toggle_analytics_board_button.setText('Enable/Disable Analytics Board')
+
+        self.toggle_build_board_button = QPushButton()
+        self.toggle_build_board_button.setCheckable(True)
+        self.toggle_build_board_button.setChecked(True)
+        self.toggle_build_board_button.setText('Enable/Disable Build Board')
+
+        settings_form.addRow(self.toggle_ticket_board_button)
+        settings_form.addRow(self.toggle_analytics_board_button)
+        settings_form.addRow(self.toggle_build_board_button)
 
 
 if __name__ == 'settings_board_view':

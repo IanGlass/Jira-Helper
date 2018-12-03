@@ -41,4 +41,4 @@ pip install SQLAlchemy
 
 pip install pysqlite3
 
-python source/controllers/main_controller.py
+python source/controllers/main_controller.py &

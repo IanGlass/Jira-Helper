@@ -24,6 +24,7 @@ app = QApplication(sys.argv)
 TRANSITION_PERIOD = 10 * 1000  # (miliseconds) time between page swap
 
 
+
 class MainController(QObject):
     def __init__(self):
         super(MainController, self).__init__()
