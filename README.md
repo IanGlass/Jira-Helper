@@ -12,16 +12,16 @@ Provides three dashboards:
 * In the development
 * In design
 * In test and waiting release 
-3). Displays current build tickets with the suffix of '-1' in one of three stages:
+3). Displays current build tickets with the suffix of *-1* in one of three stages:
 * In development
 * In design
 * In test and waiting release
 
 ## Automated Cleanup
-The program can also perform automated cleanup in the background. An automated message (user defined) is sent to waiting on customer tickets which have not had a reply for longer than a user defined period. This function can be toggled with the 'Clean Queue' button. The ticket is then set to 'Resolved' unless the customer replied, in which case it returns to the waiting on support queue. The transition to resolve tickets must be named 'Resolve this issue' for this functionality to work.
+The program can also perform automated cleanup in the background. An automated message (user defined) is sent to waiting on customer tickets which have not had a reply for longer than a user defined period. This function can be toggled with the *Clean Queue* button. The ticket is then set to *Resolved* unless the customer replied, in which case it returns to the waiting on support queue. The transition to resolve tickets must be named *Resolve this issue* for this functionality to work.
 
 ##User Configuration
-The user must provide the following information which can be entered into the 'Settings' tab:
+The user must provide the following information which can be entered into the *Settings* tab:
 * The Jira project URL
 * The Jira user as an email address
 * The user API key
