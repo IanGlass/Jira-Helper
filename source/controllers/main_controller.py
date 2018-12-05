@@ -21,7 +21,7 @@ sys.path.append(dir_path + '\\services')
 
 app = QApplication(sys.argv)
 
-TRANSITION_PERIOD = 10 * 1000  # (miliseconds) time between page swap
+TRANSITION_PERIOD = 15 * 1000  # (miliseconds) time between page swap
 
 
 class MainController(QObject):

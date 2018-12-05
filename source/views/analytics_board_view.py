@@ -119,10 +119,10 @@ class AnalyticsBoardView(QWidget):
     def update_analytics(self):
         try:
             session = self.DBSession()
-            date_history = session.query(TicketHistoryModel.stamp).all()
-            support_history = session.query(TicketHistoryModel.support).all()
-            customer_history = session.query(TicketHistoryModel.customer).all()
-            in_progress_history = session.query(TicketHistoryModel.in_progress).all()
+            date_history = session.query(TicketHistoryModel.stamp).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            support_history = session.query(TicketHistoryModel.support).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            customer_history = session.query(TicketHistoryModel.customer).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            in_progress_history = session.query(TicketHistoryModel.in_progress).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
             session.close()
             # Updates overall numbers view
             self.col_support[1].setText(str(len(jira_service.support_tickets)))

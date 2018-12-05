@@ -15,7 +15,7 @@ class AnalyticsBoardController(QObject):
         # Timer used to update the analytics page
         update_analytics_timer = QTimer(self)
         update_analytics_timer.timeout.connect(analytics_board_view.update_analytics)
-        update_analytics_timer.start(1000)  # Update every second
+        update_analytics_timer.start(5000)  # Update every 5 seconds
 
 
 if __name__ == 'analytics_board_controller':

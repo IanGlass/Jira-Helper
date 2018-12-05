@@ -29,7 +29,7 @@ class JiraService(QObject):
         # Timer to fetch tickets from JIRA server
         fetch_tickets_timer = QTimer(self)
         fetch_tickets_timer.timeout.connect(self.fetch_tickets_timeout)
-        fetch_tickets_timer.start(3000)  # Fetch tickets every 3 seconds
+        fetch_tickets_timer.start(5000)  # Fetch tickets every 5 seconds
 
         # Timer to save ticket stats to db
         save_ticket_history_timer = QTimer(self)
