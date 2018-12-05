@@ -6,13 +6,14 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel
 from PyQt5.QtCore import QDate, QTime, Qt
 from datetime import timedelta
-from datetime import datetime
+from datetime import datetime, timedelta
 # Used to truncate and convert string to datetime Obj
 from dateutil import parser
 
 from main_view import main_view
 from jira_service import jira_service
 from settings_model import Base, SettingsModel
+from new_ticket_controller import new_ticket_controller
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -115,6 +116,11 @@ class TicketBoardView(QWidget):
         try:
             for support_ticket in jira_service.support_tickets:
                 date = datetime.now()  # Get current date
+
+                # Check if the ticket is new and create a pop up
+                if (datetime.strptime(support_ticket.raw['fields']['created'][0:10] + ' ' + jira_service.support_tickets[0].raw['fields']['created'][11:19], '%Y-%m-%d %H:%M:%S') > (datetime.now() - timedelta(seconds=5))):
+                    new_ticket_controller.show_window(support_ticket.key, support_ticket.fields.reporter, support_ticket.fields.summary)
+
                 # Truncate and convert string to datetime obj
                 ticket_date = parser.parse(support_ticket.fields.updated[0:23])
                 last_updated = (date - ticket_date).total_seconds()
