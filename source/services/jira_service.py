@@ -75,7 +75,7 @@ class JiraService(QObject):
             print("Invalid credentials")
 
     def save_ticket_history(self):
-        date = datetime.utcnow()  # Get current date in UTC to save to db
+        date = datetime.today()  # Get current date in UTC to save to db
         session = self.DBSession()
         history = TicketHistoryModel(
             stamp=date,

@@ -1,6 +1,6 @@
 
 import sqlite3
-from sqlalchemy import Column, Integer, create_engine, TIMESTAMP
+from sqlalchemy import Column, Integer, create_engine, DATETIME
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import validates
 
@@ -9,7 +9,7 @@ Base = declarative_base()
 
 class TicketHistoryModel(Base):
     __tablename__ = 'ticket_history'
-    stamp = Column(TIMESTAMP, primary_key=True)
+    stamp = Column(DATETIME, primary_key=True)
     support = Column(Integer)
     in_progress = Column(Integer)
     customer = Column(Integer)
