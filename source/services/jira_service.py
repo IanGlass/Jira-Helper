@@ -1,12 +1,11 @@
 
 
-from PyQt5.QtCore import QObject, QTimer
+from PyQt5.QtCore import QObject, QTimer, QSettings
 import threading
 from jira import JIRA
 from datetime import datetime
 
-from ticket_history_model import TicketHistoryModel
-from settings_model import Base, SettingsModel
+from ticket_history_model import TicketHistoryModel, Base
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +17,10 @@ class JiraService(QObject):
         engine = create_engine('sqlite:///jira_helper.db')
         Base.metadata.bind = engine
         self.DBSession = sessionmaker(bind=engine)
+
+        # Grab settings from file
+        self.settings = QSettings('Open-Source', 'Jira-Helper')
+
         self.support_tickets = list()
         self.customer_tickets = list()
         self.in_progress_tickets = list()
@@ -47,23 +50,18 @@ class JiraService(QObject):
     def fetch_tickets(self):  # Thread for grabbing all tickets used by program
         # Catch invalid credentials
         try:
-            # Fetch credentials from database
-            session = self.DBSession()
-            settings = session.query(SettingsModel).first()
-            # Close the session for this thread OR FACE ERRORS!
-            session.close()
             # Create a JIRA object and populate ticket arrays
             self.jira = JIRA(basic_auth=(
-                str(settings.username),
-                str(settings.api_key)),
-                options={'server': settings.jira_url}
+                str(self.settings.value('username')),
+                str(self.settings.value('api_key'))),
+                options={'server': self.settings.value('jira_url')}
             )
-            self.support_tickets = self.jira.search_issues('status=' + settings.support_status.replace(" ", "\ "), maxResults=200)
-            self.customer_tickets = self.jira.search_issues('status=' + settings.customer_status.replace(" ", "\ "), maxResults=200)
-            self.in_progress_tickets = self.jira.search_issues('status=' + settings.in_progress_status.replace(" ", "\ "), maxResults=200)
-            self.dev_tickets = self.jira.search_issues('status=' + settings.dev_status.replace(" ", "\ ") + ' OR status=new', maxResults=200)
-            self.design_tickets = self.jira.search_issues('status=' + settings.design_status.replace(" ", "\ "), maxResults=200)
-            self.test_tickets = self.jira.search_issues('status=' + settings.test_status.replace(" ", "\ "), maxResults=200)
+            self.support_tickets = self.jira.search_issues('status=' + self.settings.value('support_status').replace(" ", "\ "), maxResults=200)
+            self.customer_tickets = self.jira.search_issues('status=' + self.settings.value('customer_status').replace(" ", "\ "), maxResults=200)
+            self.in_progress_tickets = self.jira.search_issues('status=' + self.settings.value('in_progress_status').replace(" ", "\ "), maxResults=200)
+            self.dev_tickets = self.jira.search_issues('status=' + self.settings.value('dev_status').replace(" ", "\ ") + ' OR status=new', maxResults=200)
+            self.design_tickets = self.jira.search_issues('status=' + self.settings.value('design_status').replace(" ", "\ "), maxResults=200)
+            self.test_tickets = self.jira.search_issues('status=' + self.settings.value('test_status').replace(" ", "\ "), maxResults=200)
 
             # Empty the list to prevent double ups
             self.build_tickets = []

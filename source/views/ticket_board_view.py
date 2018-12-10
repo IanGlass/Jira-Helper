@@ -2,6 +2,7 @@
 
 import sys
 from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel
 from PyQt5.QtCore import QDate, QTime, Qt
@@ -12,7 +13,6 @@ from dateutil import parser
 
 from main_view import main_view
 from jira_service import jira_service
-from settings_model import Base, SettingsModel
 from new_ticket_controller import new_ticket_controller
 
 from sqlalchemy import create_engine
@@ -24,9 +24,8 @@ BOARD_SIZE = 25
 class TicketBoardView(QWidget):
     def __init__(self):
         super(TicketBoardView, self).__init__()
-        engine = create_engine('sqlite:///jira_helper.db')
-        Base.metadata.bind = engine
-        self.DBSession = sessionmaker(bind=engine)
+
+        self.settings = QSettings('Open-Source', 'Jira-Helper')
 
         ticket_board_layout = QGridLayout()  # Layout for ticket board
         self.setLayout(ticket_board_layout)
@@ -124,68 +123,64 @@ class TicketBoardView(QWidget):
             self.red_phase = False
         else:
             self.red_phase = True
-        try:
-            for support_ticket in jira_service.support_tickets:
-                date = datetime.now()  # Get current date
+        # try:
+        for support_ticket in jira_service.support_tickets:
+            date = datetime.now()  # Get current date
 
-                # Check if the ticket is new and create a pop up
-                if (datetime.strptime(support_ticket.raw['fields']['created'][0:10] + ' ' + jira_service.support_tickets[0].raw['fields']['created'][11:19], '%Y-%m-%d %H:%M:%S') > (datetime.now() - timedelta(seconds=5))):
-                    new_ticket_controller.show_window(support_ticket.key, support_ticket.fields.reporter, support_ticket.fields.summary)
+            # Check if the ticket is new and create a pop up
+            if (datetime.strptime(support_ticket.raw['fields']['created'][0:10] + ' ' + jira_service.support_tickets[0].raw['fields']['created'][11:19], '%Y-%m-%d %H:%M:%S') > (datetime.now() - timedelta(seconds=15))):
+                new_ticket_controller.show_window(support_ticket.key, support_ticket.fields.reporter, support_ticket.fields.summary)
 
-                # Truncate and convert string to datetime obj
-                ticket_date = parser.parse(support_ticket.fields.updated[0:23])
-                last_updated = (date - ticket_date).total_seconds()
-                # TODO dynamically get 'customfield_11206 val
-                try:  # Get the ongoingCycle SLA, ongoingCycle does not always exist and is never an array
-                    open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis'] / 1000))
+            # Truncate and convert string to datetime obj
+            ticket_date = parser.parse(support_ticket.fields.updated[0:23])
+            last_updated = (date - ticket_date).total_seconds()
+            # TODO dynamically get 'customfield_11206 val
+            try:  # Get the ongoingCycle SLA, ongoingCycle does not always exist and is never an array
+                open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['ongoingCycle']['elapsedTime']['millis'] / 1000))
 
-                except:  # Grab last dictionary in completedCycles array instead, is always an array
-                    open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles']) - 1]['elapsedTime']['millis'] / 1000))
+            except:  # Grab last dictionary in completedCycles array instead, is always an array
+                open_for_hours = timedelta(seconds=int(support_ticket.raw['fields']['customfield_11206']['completedCycles'][len(support_ticket.raw['fields']['customfield_11206']['completedCycles']) - 1]['elapsedTime']['millis'] / 1000))
 
-                session = self.DBSession()
-                settings = session.query(SettingsModel).first()
-                session.close()
-
-                if (last_updated > settings.black_alert and count <= BOARD_SIZE):  # Only display if board is not full
-                    if (last_updated > settings.melt_down):  # Things are serious!
+            if (last_updated > self.settings.value('black_alert', type=int) and count <= BOARD_SIZE):  # Only display if board is not full
+                if (last_updated > self.settings.value('melt_down', type=int)):  # Things are serious!
+                    self.col_key[count].setStyleSheet('color: red')
+                    self.col_reporter[count].setStyleSheet('color: red')
+                    self.col_summary[count].setStyleSheet('color: red')
+                    self.col_assigned[count].setStyleSheet('color: red')
+                    self.col_last_updated[count].setStyleSheet('color: red')
+                    self.col_sla[count].setStyleSheet('color: red')
+                elif (last_updated > self.settings.value('red_alert', type=int)):  # Things are not so Ok
+                    if (self.red_phase):
                         self.col_key[count].setStyleSheet('color: red')
                         self.col_reporter[count].setStyleSheet('color: red')
                         self.col_summary[count].setStyleSheet('color: red')
                         self.col_assigned[count].setStyleSheet('color: red')
                         self.col_last_updated[count].setStyleSheet('color: red')
                         self.col_sla[count].setStyleSheet('color: red')
-                    elif (last_updated > settings.red_alert):  # Things are not so Ok
-                        if (self.red_phase):
-                            self.col_key[count].setStyleSheet('color: red')
-                            self.col_reporter[count].setStyleSheet('color: red')
-                            self.col_summary[count].setStyleSheet('color: red')
-                            self.col_assigned[count].setStyleSheet('color: red')
-                            self.col_last_updated[count].setStyleSheet('color: red')
-                            self.col_sla[count].setStyleSheet('color: red')
-                        else:
-                            self.col_key[count].setStyleSheet('color: black')
-                            self.col_reporter[count].setStyleSheet('color: black')
-                            self.col_summary[count].setStyleSheet('color: black')
-                            self.col_assigned[count].setStyleSheet('color: black')
-                            self.col_last_updated[count].setStyleSheet('color: black')
-                            self.col_sla[count].setStyleSheet('color: black')
-                    else:  # Things are still Okish
+                    else:
                         self.col_key[count].setStyleSheet('color: black')
                         self.col_reporter[count].setStyleSheet('color: black')
                         self.col_summary[count].setStyleSheet('color: black')
                         self.col_assigned[count].setStyleSheet('color: black')
                         self.col_last_updated[count].setStyleSheet('color: black')
                         self.col_sla[count].setStyleSheet('color: black')
-                    self.col_key[count].setText(str(support_ticket.key))
-                    self.col_key[count].setText(str(support_ticket.fields.reporter))
-                    self.col_summary[count].setText(str(support_ticket.fields.summary))
-                    self.col_assigned[count].setText(str(support_ticket.fields.assignee))
-                    self.col_last_updated[count].setText(str(support_ticket.fields.updated))
-                    self.col_sla[count].setText(str(open_for_hours))
-                    count = count + 1
+                else:  # Things are still Okish
+                    self.col_key[count].setStyleSheet('color: black')
+                    self.col_reporter[count].setStyleSheet('color: black')
+                    self.col_summary[count].setStyleSheet('color: black')
+                    self.col_assigned[count].setStyleSheet('color: black')
+                    self.col_last_updated[count].setStyleSheet('color: black')
+                    self.col_sla[count].setStyleSheet('color: black')
+                self.col_key[count].setText(str(support_ticket.key))
+                self.col_key[count].setText(str(support_ticket.fields.reporter))
+                self.col_summary[count].setText(str(support_ticket.fields.summary))
+                self.col_assigned[count].setText(str(support_ticket.fields.assignee))
+                self.col_last_updated[count].setText(str(support_ticket.fields.updated))
+                self.col_sla[count].setText(str(open_for_hours))
+                count = count + 1
 
-        except:
-            print("No support tickets")
+        # except:
+        #     print("No support tickets")
 
 
 if __name__ == 'ticket_board_view':
