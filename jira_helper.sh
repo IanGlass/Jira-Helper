@@ -33,10 +33,7 @@ pip install pycodestyle
 # Install matplotlib required to plot in analytics board
 python -m pip install -U matplotlib
 
-# Install database conncetor for postgresql
-pip install psycopg2
-
-# Install SQLAlchemy ORM for python and psycopg
+# Install SQLAlchemy ORM for python
 pip install SQLAlchemy
 
 pip install pysqlite3

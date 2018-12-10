@@ -1,7 +1,7 @@
 # Creates the main window and top row tool panel containing the 'settings' and 'clean queue' button, time and date. Also performs waiting on customer queue cleaning through a background thread which is toggled using the 'clean queue' button
 
 import sys
-from PyQt5.QtCore import QTimer, QObject
+from PyQt5.QtCore import QTimer, QObject, QSettings
 from PyQt5.QtWidgets import QApplication
 
 from jira import JIRA
@@ -27,9 +27,8 @@ TRANSITION_PERIOD = 15 * 1000  # (miliseconds) time between page swap
 class MainController(QObject):
     def __init__(self):
         super(MainController, self).__init__()
-        engine = create_engine('sqlite:///jira_helper.db')
-        Base.metadata.bind = engine
-        self.DBSession = sessionmaker(bind=engine)
+
+        self.settings = QSettings('Open-Source', 'Jira-Helper')
 
         # Attach controller function to submit button view
         main_view.settings_submit_button.clicked.connect(self.push_settings_button)
@@ -60,10 +59,7 @@ class MainController(QObject):
         '''Periodically called to check through the 'waiting for customer' queue and send an automated message'''
         # Try to get a transition key if there are any tickets in waiting for customer
         try:
-            session = self.DBSession()
-            settings = session.query(SettingsModel).first()
-            session.close()
-            jira = JIRA(basic_auth=(str(settings.username), str(settings.api_key)), options={'server': settings.jira_url})
+            jira = JIRA(basic_auth=(str(self.settings.value('username')), str(self.settings.value('api_key'))), options={'server': self.settings.value('jira_url')})
             # Get list of transitions for a ticket in the waiting on customer queue
             transitions = jira.transitions(ticket_board.customer_tickets[0].key)
             # Find the transition key needed to move from waiting for customer to cold tickets queue
@@ -77,15 +73,15 @@ class MainController(QObject):
                     # Truncate and convert string to datetime obj
                     customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23])
                     last_updated = (date - customer_ticket_date).total_seconds()
-                    if (last_updated > settings.clean_queue_delay):  # If tickets are overdue
+                    if (last_updated > self.settings.value('clean_queue_delay')):  # If tickets are overdue
                         # Fetch the comments obj for the current ticket
                         comments = jira.issue(customer_ticket.key)
                         # Check last comment in the ticket and see if it was the AUTOMATED_MESSAGE, if so
                         # client has not responded to automation message. Throw into cold queue
-                        if settings.automated_message in comments.raw['fields']['comment']['comments'][len(comments.raw['fields']['comment']['comments']) - 1]['body']:
+                        if self.settings.value('automated_message') in comments.raw['fields']['comment']['comments'][len(comments.raw['fields']['comment']['comments']) - 1]['body']:
                             jira.transition_issue(customer_ticket, transition_key)
                         else:  # AUTOMATION_MESSAGE not found, then ticket is just old, add AUTOMATION_MESSAGE to ticket
-                            jira.add_comment(customer_ticket.key, settings.automated_message, is_internal=False)
+                            jira.add_comment(customer_ticket.key, self.settings.value('automated_message'), is_internal=False)
 
         except:
             print("No tickets to check or invalid transition key")
@@ -122,7 +118,6 @@ class MainController(QObject):
 if __name__ == '__main__':
     from main_view import main_view
     # Instantiate models, dbs and services
-    from settings_model import Base, SettingsModel
     from ticket_history_model import TicketHistoryModel
     from jira_service import jira_service
     main_controller = MainController()
