@@ -60,28 +60,28 @@ class MainController(QObject):
         # Try to get a transition key if there are any tickets in waiting for customer
         try:
             jira = JIRA(basic_auth=(str(self.settings.value('username')), str(self.settings.value('api_key'))), options={'server': self.settings.value('jira_url')})
-            # Get list of transitions for a ticket in the waiting on customer queue
-            transitions = jira.transitions(ticket_board.customer_tickets[0].key)
-            # Find the transition key needed to move from waiting for customer to cold tickets queue
-            for key in transitions:
-                if (key['name'] == 'No reply transistion'):
-                    transition_key = key['id']
+            # # Get list of transitions for a ticket in the waiting on customer queue
+            # transitions = jira.transitions(ticket_board.customer_tickets[0].key)
+            # # Find the transition key needed to move from waiting for customer to cold tickets queue
+            # for key in transitions:
+            #     if (key['name'] == 'No reply transistion'):
+            #         transition_key = key['id']
 
-            for customer_ticket in ticket_board.customer_tickets:
-                if customer_ticket.key == 'WS-909':
-                    date = datetime.now()  # Get current date
-                    # Truncate and convert string to datetime obj
-                    customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23])
-                    last_updated = (date - customer_ticket_date).total_seconds()
-                    if (last_updated > self.settings.value('clean_queue_delay')):  # If tickets are overdue
-                        # Fetch the comments obj for the current ticket
-                        comments = jira.issue(customer_ticket.key)
-                        # Check last comment in the ticket and see if it was the AUTOMATED_MESSAGE, if so
-                        # client has not responded to automation message. Throw into cold queue
-                        if self.settings.value('automated_message') in comments.raw['fields']['comment']['comments'][len(comments.raw['fields']['comment']['comments']) - 1]['body']:
-                            jira.transition_issue(customer_ticket, transition_key)
-                        else:  # AUTOMATION_MESSAGE not found, then ticket is just old, add AUTOMATION_MESSAGE to ticket
-                            jira.add_comment(customer_ticket.key, self.settings.value('automated_message'), is_internal=False)
+            # for customer_ticket in ticket_board.customer_tickets:
+            #     if customer_ticket.key == 'WS-909':
+            #         date = datetime.now()  # Get current date
+            #         # Truncate and convert string to datetime obj
+            #         customer_ticket_date = parser.parse(customer_ticket.fields.updated[0:23])
+            #         last_updated = (date - customer_ticket_date).total_seconds()
+            #         if (last_updated > self.settings.value('clean_queue_delay')):  # If tickets are overdue
+            #             # Fetch the comments obj for the current ticket
+            #             comments = jira.issue(customer_ticket.key)
+            #             # Check last comment in the ticket and see if it was the AUTOMATED_MESSAGE, if so
+            #             # client has not responded to automation message. Throw into cold queue
+            #             if self.settings.value('automated_message') in comments.raw['fields']['comment']['comments'][len(comments.raw['fields']['comment']['comments']) - 1]['body']:
+            #                 jira.transition_issue(customer_ticket, transition_key)
+            #             else:  # AUTOMATION_MESSAGE not found, then ticket is just old, add AUTOMATION_MESSAGE to ticket
+            #                 jira.add_comment(customer_ticket.key, self.settings.value('automated_message'), is_internal=False)
 
         except:
             print("No tickets to check or invalid transition key")
