@@ -27,4 +27,5 @@ class NewTicketController(QObject):
 
 
 if __name__ == 'new_ticket_controller':
+    print('Instantiating ' + __name__)
     new_ticket_controller = NewTicketController()

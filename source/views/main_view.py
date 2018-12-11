@@ -61,5 +61,5 @@ class MainView(QMainWindow):
 
 
 if __name__ == 'main_view':
-    print('Instantiating main_view')
+    print('Instantiating ' + __name__)
     main_view = MainView()

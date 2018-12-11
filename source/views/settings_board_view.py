@@ -102,5 +102,5 @@ class SettingsBoardView(QWidget):
 
 
 if __name__ == 'settings_board_view':
-    print('Instantiating settings_view')
+    print('Instantiating ' + __name__)
     settings_board_view = SettingsBoardView()

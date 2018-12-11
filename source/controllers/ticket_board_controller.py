@@ -18,4 +18,5 @@ class TicketBoardController(QObject):
 
 
 if __name__ == 'ticket_board_controller':
+    print('Instantiating ' + __name__)
     ticket_board_controller = TicketBoardController()

@@ -93,7 +93,7 @@ class BuildBoardView(QWidget):
 
 
 if __name__ == 'build_board_view':
-    print('Instantiating build_board_view')
+    print('Instantiating ' + __name__)
     build_board_view = BuildBoardView()
     # Add the ticket board widget/layout to the main window widget
     main_view.window.addWidget(build_board_view)

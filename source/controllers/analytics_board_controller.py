@@ -19,4 +19,5 @@ class AnalyticsBoardController(QObject):
 
 
 if __name__ == 'analytics_board_controller':
+    print('Instantiating ' + __name__)
     analytics_board_controller = AnalyticsBoardController()

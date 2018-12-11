@@ -144,7 +144,7 @@ class AnalyticsBoardView(QWidget):
 
 
 if __name__ == 'analytics_board_view':
-    print('Instantiating analytics_view')
+    print('Instantiating ' + __name__)
     analytics_board_view = AnalyticsBoardView()
     # Add the analytics board widget/layout to the main window widget
     main_view.window.addWidget(analytics_board_view)

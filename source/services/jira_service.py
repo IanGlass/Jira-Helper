@@ -93,5 +93,5 @@ class JiraService(QObject):
 
 
 if __name__ == 'jira_service':
-    print('Instantiating jira_service')
+    print('Instantiating ' + __name__)
     jira_service = JiraService()

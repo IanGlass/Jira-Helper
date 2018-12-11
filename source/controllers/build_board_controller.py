@@ -17,4 +17,5 @@ class BuildBoardController(QObject):
 
 
 if __name__ == 'build_board_controller':
+    print('Instantiating ' + __name__)
     build_board_controller = BuildBoardController()

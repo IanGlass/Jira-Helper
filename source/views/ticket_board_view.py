@@ -184,6 +184,7 @@ class TicketBoardView(QWidget):
 
 
 if __name__ == 'ticket_board_view':
+    print('Instantiating ' + __name__)
     ticket_board_view = TicketBoardView()
     # Add the ticket board widget/layout to the main window widget
     main_view.window.addWidget(ticket_board_view)

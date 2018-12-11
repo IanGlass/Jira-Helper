@@ -30,4 +30,5 @@ class NewTicketView(QMainWindow):
 
 
 if __name__ == 'new_ticket_view':
+    print('Instantiating ' + __name__)
     new_ticket_view = NewTicketView()

@@ -73,6 +73,7 @@ class SettingsBoardController(QObject):
 
 
 if __name__ == 'settings_board_controller':
+    print('Instantiating ' + __name__)
     settings_board_controller = SettingsBoardController()
     from main_view import main_view
     from ticket_board_view import ticket_board_view
