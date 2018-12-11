@@ -47,7 +47,7 @@ class BuildBoardView(QWidget):
 
         test_title = QLabel()
         test_title.setFixedHeight(20)
-        test_title.setText('In Test')
+        test_title.setText('In Test/Waiting Release')
         test_title.setFont(header_font)
         self.build_board_layout.addWidget(test_title, 1, 2, QtCore.Qt.AlignCenter)
 
@@ -70,6 +70,7 @@ class BuildBoardView(QWidget):
         for i in range(0, BOARD_SIZE):
             self.progress[i].setValue(0)
             self.build_board_layout.removeWidget(self.progress_key[i])
+            self.progress_key[i].setText('')
 
     def update_board(self):
         self.clean_board()
