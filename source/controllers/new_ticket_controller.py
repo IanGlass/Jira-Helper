@@ -19,7 +19,7 @@ class NewTicketController(QObject):
         new_ticket_view.summary.setText(summary)
         new_ticket_view.show()
         new_ticket_view.resize(1000, 150)
-        self.close_window_timer.start(10000)  # Keep window open for 10 seconds
+        self.close_window_timer.start(15000)  # Keep window open for 15 seconds
 
     def close_window_timeout(self):
         new_ticket_view.close()

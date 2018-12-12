@@ -67,7 +67,7 @@ class JiraService(QObject):
             self.build_tickets = []
             # Create a list of build tickets
             for ticket in (self.dev_tickets + self.design_tickets + self.test_tickets):
-                # Check if suffice of ticket number is 1, indicating a build ticket
+                # Check if suffix of ticket number is 1, indicating a build ticket
                 if int(ticket.raw['key'][ticket.raw['key'].find('-') + 1:len(ticket.raw['key'])]) == 1:
                     self.build_tickets.append(ticket)
 

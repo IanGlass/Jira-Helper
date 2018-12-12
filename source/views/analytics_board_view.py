@@ -117,30 +117,30 @@ class AnalyticsBoardView(QWidget):
         self.figure.patch.set_facecolor([240 / 255, 240 / 255, 240 / 255, 1])
 
     def update_analytics(self):
-        # try:
-        session = self.DBSession()
-        date_history = session.query(TicketHistoryModel.stamp).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
-        support_history = session.query(TicketHistoryModel.support).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
-        customer_history = session.query(TicketHistoryModel.customer).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
-        in_progress_history = session.query(TicketHistoryModel.in_progress).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
-        session.close()
-        # Updates overall numbers view
-        self.col_support[1].setText(str(len(jira_service.support_tickets)))
-        self.col_customer[1].setText(str(len(jira_service.customer_tickets)))
-        self.col_in_progress[1].setText(str(len(jira_service.in_progress_tickets)))
-        self.col_dev[1].setText(str(len(jira_service.dev_tickets)))
-        self.col_design[1].setText(str(len(jira_service.design_tickets)))
-        self.col_test[1].setText(str(len(jira_service.test_tickets)))
+        try:
+            session = self.DBSession()
+            date_history = session.query(TicketHistoryModel.stamp).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            support_history = session.query(TicketHistoryModel.support).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            customer_history = session.query(TicketHistoryModel.customer).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            in_progress_history = session.query(TicketHistoryModel.in_progress).filter(TicketHistoryModel.stamp > (datetime.now() - timedelta(weeks=2))).all()
+            session.close()
+            # Updates overall numbers view
+            self.col_support[1].setText(str(len(jira_service.support_tickets)))
+            self.col_customer[1].setText(str(len(jira_service.customer_tickets)))
+            self.col_in_progress[1].setText(str(len(jira_service.in_progress_tickets)))
+            self.col_dev[1].setText(str(len(jira_service.dev_tickets)))
+            self.col_design[1].setText(str(len(jira_service.design_tickets)))
+            self.col_test[1].setText(str(len(jira_service.test_tickets)))
 
-        self.ax.clear()
-        self.ax.plot(date_history, support_history, 'r-', label='waiting for support')
-        self.ax.plot(date_history, customer_history, 'b-', label='waiting for customer')
-        self.ax.plot(date_history, in_progress_history, 'g-', label='in progress')
-        self.ax.legend(loc='best')
-        self.canvas.draw()
+            self.ax.clear()
+            self.ax.plot(date_history, support_history, 'r-', label='waiting for support')
+            self.ax.plot(date_history, customer_history, 'b-', label='waiting for customer')
+            self.ax.plot(date_history, in_progress_history, 'g-', label='in progress')
+            self.ax.legend(loc='best')
+            self.canvas.draw()
 
-        # except:
-        #     print('Missing queue status configuration')
+        except:
+            print('Missing queue status configuration')
 
 
 if __name__ == 'analytics_board_view':
