@@ -7,9 +7,6 @@ pycodestyle source/
 RESULT=\$?
 [ \$RESULT -ne 0 ] && exit 1
 
-pycodestyle tests/
-RESULT=\$?
-[ \$RESULT -ne 0 ] && exit 1
 exit 0"
 
 # Check if pre-commit hooks already exists
