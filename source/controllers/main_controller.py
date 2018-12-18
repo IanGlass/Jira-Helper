@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path = dir_path[:-12]
+dir_path = dir_path[:-12]  # Remove '\controllers' from main dir path
 sys.path.append(dir_path + '\\models')
 sys.path.append(dir_path + '\\views')
 sys.path.append(dir_path + '\\controllers')
@@ -121,7 +121,6 @@ if __name__ == '__main__':
     from ticket_history_model import TicketHistoryModel
     from jira_service import jira_service
     main_controller = MainController()
-    main_view.setWindowTitle('Jira Helper')
     # Can't import module until instantiation of main_view
     from ticket_board_controller import ticket_board_controller
     from analytics_board_controller import analytics_board_controller

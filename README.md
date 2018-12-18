@@ -7,12 +7,13 @@ Three dashboards are currently available, which can be disabled/enabled from the
 
 1). Displays overdue tickets waiting on support staff, either in black, red or flashing red. The time until a ticket becomes overdue can be configured in the settings panel.
 2). Displays the current number of tickets:
-* Waiting on support staff
-* Waiting on response from the customer
+* Waiting for support staff
+* Waiting for response from the customer
 * In progress
 * In the development
 * In design
 * In test and waiting release 
+This board also displays a timeline of ticket history for waiting for support, waiting for customer and in progress tickets. *NOTE* Ticket history is saved every 5 minutes and will take up to 5 minutes to begin populating after valid credentials are provided.
 3). Displays current build tickets with the suffix of *-1* in one of three stages:
 * In development
 * In design

@@ -2,7 +2,7 @@
 
 import sys
 from PyQt5 import QtCore
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QStackedWidget, QGridLayout, QWidget, QHBoxLayout, QPushButton, QLabel
 # Used to covert and import datetime
 from PyQt5.QtCore import QDate, QTime, Qt
@@ -11,6 +11,7 @@ from PyQt5.QtCore import QDate, QTime, Qt
 class MainView(QMainWindow):
     def __init__(self):
         super(MainView, self).__init__()
+        self.setWindowTitle('Jira Helper')
 
         self.window = QStackedWidget()  # Create the main widget for the page
 
